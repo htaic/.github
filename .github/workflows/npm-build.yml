@@ -22,6 +22,11 @@ on:
         description: "Command to pass yarn for jest tests"
         type: string
         default: ""
+      playwrite_test:
+        required: false
+        description: "Toggle to true to enable playwrite tests"
+        type: boolean
+        default: false
       jira_project_key:
         required: false
         description: "Required to push results to zephyr scale in jira"
@@ -48,6 +53,7 @@ jobs:
   semantic-release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         node-version: ['lts/*']
@@ -69,7 +75,15 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Run yarn command
+      - name: Install Playwright
+        if: inputs.playwrite_test
+        working-directory: ${{ inputs.working_dir }}
+        run: npx playwright install --with-deps
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run yarn build command
         working-directory: ${{ inputs.working_dir }}
         run: yarn ${{ inputs.yarn_arg }}
         env:
@@ -83,6 +97,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
+      - name: Run Playwright
+        if: inputs.playwrite_test
+        working-directory: ${{ inputs.working_dir }}
+        run: xvfb-run --auto-servernum -- yarn playwright
+        continue-on-error: true
+        
       - name: Release
         if: inputs.trigger_release
         working-directory: ${{ inputs.working_dir }}
@@ -91,12 +111,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
-        
-      - name: Upload Test Results - ${{ inputs.jira_project_key }}
-        if: inputs.jira_project_key != null
+
+      - name: Upload Jest Results - ${{ inputs.jira_project_key }}
+        if: inputs.jest_test_command != null && inputs.jira_project_key != null
         working-directory: ${{ inputs.working_dir }}
         run: |
           curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=#${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
           --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
           --form 'file=@"./junit.xml"'
+        continue-on-error: true
+    
+      - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
+        if: inputs.playwrite_test && inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=#${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./playwright-results.xml"'
         continue-on-error: true

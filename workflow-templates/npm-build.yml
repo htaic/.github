@@ -15,6 +15,7 @@ jobs:
       # optional
       working_dir: .
       trigger_release: false
-      jest_test_command: "" 
+      jest_test_command: ""
+      playwrite_test: false 
       jira_project_key: ""
     secrets: inherit
