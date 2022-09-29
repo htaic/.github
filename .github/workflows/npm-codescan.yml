@@ -1,0 +1,62 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Scan NPM package
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      allow_lint:
+        required: false
+        description: "Enable npm linting"
+        type: boolean
+        default: true
+      allow_audit:
+        required: false
+        description: "Enable npm auditing"
+        type: boolean
+        default: true
+    secrets:
+      GH_READPAT:
+        required: true
+
+jobs:
+  code-scanning:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Audit
+        if: inputs.allow_audit
+        working-directory: ${{ inputs.working_dir }}
+        run: npm audit --omit=dev --audit-level high
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM linting
+        if: inputs.allow_lint
+        working-directory: ${{ inputs.working_dir }}
+        run: npm run lint
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
