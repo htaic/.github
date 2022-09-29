@@ -1,2 +1,2 @@
-# .github
-Public repo for general settings
+# Hanwha
+Public repo for Hanwha org and sharing
