@@ -53,6 +53,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
+          # Make sure you use the same token you are using for semantic-versioning or the github action will get
+          # confused about which token to connect with and GITHUB_TOKEN won't be valid
           token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
       - name: Setup Node.js
@@ -95,10 +97,6 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: xvfb-run --auto-servernum -- yarn playwright
         continue-on-error: true
-        
-      - name: debug
-        if: inputs.trigger_release
-        run: echo "something has changed"
 
       - name: Release
         if: inputs.trigger_release
