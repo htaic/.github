@@ -1,0 +1,102 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Build NPM package
+
+on:
+  workflow_call:
+    inputs:
+      yarn_arg:
+        required: true
+        description: "Command to pass yarn for build"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      trigger_release:
+        required: false
+        description: "Toggle to true for semantic release"
+        type: boolean
+      jest_test_command:
+        required: false
+        description: "Command to pass yarn for jest tests"
+        type: string
+        default: ""
+      jira_project_key:
+        required: false
+        description: "Required to push results to zephyr scale in jira"
+        type: string
+        default: ""
+    secrets:
+      GH_READPAT:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+      ZEPHYR_PAT:
+        required: false
+
+jobs:
+  code-scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Scan code - not implimented
+        working-directory: ${{ inputs.working_dir }}
+        run: echo "Code scanning definition needed for npm" 
+
+  semantic-release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run yarn command
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.yarn_arg }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Jest
+        if: inputs.jest_test_command != null
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.jest_test_command }}
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Release
+        if: inputs.trigger_release
+        working-directory: ${{ inputs.working_dir }}
+        run: npx semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+        
+      - name: Upload Test Results - ${{ inputs.jira_project_key }}
+        if: inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=#${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./junit.xml"'
+        continue-on-error: true

@@ -1,0 +1,11 @@
+{
+    "name": "Docker NPM Workflow",
+    "description": "Docker image of NPM package",
+    "iconName": "npm-icon",
+    "categories": [
+        "NPM Config",
+        "Dockerfile"
+    ],
+    "filePatterns": [
+    ]
+}

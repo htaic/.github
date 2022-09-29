@@ -1,0 +1,19 @@
+name: Example - Build NPM Package
+
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - .github/workflows/**
+
+jobs:
+  npm-build:
+    uses: htaic/.github/.github/workflows/npm-docker-build.yml@main
+    with:
+      yarn_arg: {{ your yarn arg }}
+      # optional
+      working_dir: .
+      npmtoken_for_docker: false
+      trigger_release: true
+    secrets: inherit

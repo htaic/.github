@@ -1,0 +1,10 @@
+{
+    "name": "NPM Workflow",
+    "description": "Standard NPM package build",
+    "iconName": "npm-icon",
+    "categories": [
+        "NPM Config"
+    ],
+    "filePatterns": [
+    ]
+}

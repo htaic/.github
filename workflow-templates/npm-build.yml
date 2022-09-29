@@ -1,0 +1,20 @@
+name: Example - Build NPM Package
+
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - .github/workflows/**
+
+jobs:
+  npm-build:
+    uses: htaic/.github/.github/workflows/npm-build.yml@main
+    with:
+      yarn_arg: {{ your yarn arg }}
+      # optional
+      working_dir: .
+      trigger_release: false
+      jest_test_command: "" 
+      jira_project_key: ""
+    secrets: inherit

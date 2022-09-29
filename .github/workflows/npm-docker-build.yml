@@ -1,0 +1,108 @@
+name: Build NPM docker package
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        required: true
+        description: "Name of docker registry to publish. Does not need ghcr.io/htaic/ in front."
+        type: string
+      yarn_arg:
+        required: true
+        description: "Command to pass yarn for build"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      npmtoken_for_docker:
+        required: false
+        description: "If a yarn or npm command requiring @htaic access call from inside the docker build, this is required. Ensure the .npmrc file is removed as a docker build step"
+        type: boolean
+      trigger_release:
+        required: false
+        description: "Toggle to true for docker push all tags"
+        type: boolean
+    secrets:
+      GH_READPAT:
+        required: true
+      GH_USERNAME:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+
+jobs:
+  code-scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Scan code - not implimented
+        working-directory: ${{ inputs.working_dir }}
+        run: echo "Code scanning definition needed for docker" 
+
+  docker-build:
+    name: Run NPM build and Docker Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run yarn command
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.yarn_arg }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      # this should come before any docker type commands to ensure access to the ghcr.io repo for custom images and publishing
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }}
+          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Create NPMRC for docker
+        if: inputs.npmtoken_for_docker
+        working-directory: example-code
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
+
+      - name: Docker Build
+        working-directory: ${{ inputs.working_dir }}
+        run: docker build . -t ghcr.io/htaic/${{ inputs.image_name }}:$(date +%s) -t ghcr.io/htaic/${{ inputs.image_name }}:$GITHUB_REF_NAME -t ghcr.io/htaic/${{ inputs.image_name }}:latest
+
+      - name: Run Tests - ${{ inputs.image_name }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          echo "No additional tests defined"
+
+      - name: Upload Artifact - ${{ inputs.image_name }}
+        if: inputs.trigger_release
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
+        env:
+          CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
+        continue-on-error: false
+
+
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow

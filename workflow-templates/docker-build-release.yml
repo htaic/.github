@@ -1,0 +1,32 @@
+name: Example - Build NPM Package
+
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - .github/workflows/**
+
+jobs:
+  docker-build:
+    uses: htaic/.github/.github/workflows/npm-docker-build.yml@main
+    with:
+      yarn_arg: {{ your yarn arg }}
+      image_name: {{ your docker image name }}
+      # optional 
+      working_dir: .
+      npmtoken_for_docker: false
+      trigger_release: false
+    secrets: inherit
+
+  dev-k8s-deploy:
+    needs: docker-build
+    uses: htaic/.github/.github/workflows/docker-env-release.yml@main
+    with:
+      service_name: {{ your docker image name }}
+      ASSUME_ROLE: {{ your aws arn }}
+      # optional 
+      working_dir: .
+      helm_values: {{ values.yaml to pass helm }}
+      cluster_name: {{ your aws cluster }}
+    secrets: inherit
