@@ -2,13 +2,16 @@ name: Example - Build NPM Package
 
 on:
   push:
-    branches: 
+  pull_request:
+    branches:
       - main
-    paths:
-      - .github/workflows/**
+      - release
+      - production
 
 jobs:
   docker-build:
+    if: github.ref == 'refs/heads/main'
+    needs: npm-scan
     uses: htaic/.github/.github/workflows/npm-docker-build.yml@main
     with:
       yarn_arg: {{ your yarn arg }}

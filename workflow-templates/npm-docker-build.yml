@@ -2,18 +2,18 @@ name: Example - Build NPM Package
 
 on:
   push:
-    branches: 
+    branches:
       - main
-    paths:
-      - .github/workflows/**
 
 jobs:
   npm-build:
+    if: github.ref == 'refs/heads/main'
+    needs: npm-scan
     uses: htaic/.github/.github/workflows/npm-docker-build.yml@main
     with:
       yarn_arg: {{ your yarn arg }}
       # optional
       working_dir: .
       npmtoken_for_docker: false
-      trigger_release: true
+      trigger_release: false
     secrets: inherit

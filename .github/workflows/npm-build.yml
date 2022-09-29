@@ -106,7 +106,7 @@ jobs:
         if: inputs.jest_test_command != null && inputs.jira_project_key != null
         working-directory: ${{ inputs.working_dir }}
         run: |
-          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=#${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
           --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
           --form 'file=@"./junit.xml"'
         continue-on-error: true
@@ -115,7 +115,7 @@ jobs:
         if: inputs.playwrite_test && inputs.jira_project_key != null
         working-directory: ${{ inputs.working_dir }}
         run: |
-          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=#${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
           --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
