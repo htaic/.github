@@ -50,13 +50,13 @@ jobs:
       - name: NPM Audit
         if: inputs.allow_audit
         working-directory: ${{ inputs.working_dir }}
-        run: npm audit --omit=dev --audit-level high
+        run: yarn audit --omit=dev --audit-level high
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: NPM linting
         if: inputs.allow_lint
         working-directory: ${{ inputs.working_dir }}
-        run: npm run lint
+        run: yarn lint
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
