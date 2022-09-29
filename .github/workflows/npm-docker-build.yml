@@ -38,9 +38,32 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Scan code - not implimented
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
         working-directory: ${{ inputs.working_dir }}
-        run: echo "Code scanning definition needed for docker" 
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Audit
+        if: inputs.allow_audit
+        working-directory: ${{ inputs.working_dir }}
+        run: npm audit --omit=dev --audit-level high
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM linting
+        if: inputs.allow_lint
+        working-directory: ${{ inputs.working_dir }}
+        run: npm run lint
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
   docker-build:
     name: Run NPM build and Docker Build

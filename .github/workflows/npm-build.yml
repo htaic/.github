@@ -32,6 +32,16 @@ on:
         description: "Required to push results to zephyr scale in jira"
         type: string
         default: ""
+      allow_lint:
+        required: false
+        description: "Enable npm linting"
+        type: boolean
+        default: true
+      allow_audit:
+        required: false
+        description: "Enable npm auditing"
+        type: boolean
+        default: true
     secrets:
       GH_READPAT:
         required: true
@@ -46,9 +56,32 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Scan code - not implimented
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
         working-directory: ${{ inputs.working_dir }}
-        run: echo "Code scanning definition needed for npm" 
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Audit
+        if: inputs.allow_audit
+        working-directory: ${{ inputs.working_dir }}
+        run: npm audit --omit=dev --audit-level high
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM linting
+        if: inputs.allow_lint
+        working-directory: ${{ inputs.working_dir }}
+        run: npm run lint
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
   semantic-release:
     name: Semantic Release
@@ -108,8 +141,7 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: npx semantic-release
         env:
-          GH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
       - name: Upload Jest Results - ${{ inputs.jira_project_key }}
