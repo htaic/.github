@@ -1,7 +1,7 @@
 {
     "name": "Build/Deploy NPM Docker",
     "description": "Docker image of NPM package",
-    "iconName": "npm-icon",
+    "iconName": "K8S",
     "categories": [
         "NPM Config",
         "Dockerfile"

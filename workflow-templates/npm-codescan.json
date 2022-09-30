@@ -1,7 +1,7 @@
 {
     "name": "NPM scanning Workflow",
     "description": "NPM code scanning package",
-    "iconName": "npm-icon",
+    "iconName": "npm",
     "categories": [
         "NPM Config"
     ],
