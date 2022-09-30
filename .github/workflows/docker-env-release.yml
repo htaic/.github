@@ -21,6 +21,16 @@ on:
         description: "Path of local helm values.yaml file"
         type: string
         default: DevValues.yaml
+      helm_source:
+        required: false
+        description: "Helm URL to register packages"
+        type: string
+        default: https://htaic.github.io/helm-charts
+      helm_chart:
+        required: false
+        description: "Name of helm package"
+        type: string
+        default: htaic/microfrontend
       cluster_name:
         required: false
         description: "Name of EKS cluster"
@@ -51,15 +61,6 @@ jobs:
           #this piece isn't working, so I added an sts assume-role command in the next step
           # https://github.com/aws-actions/configure-aws-credentials/issues/465
           
-      # get the micro front end helm chart for automatic deployment  
-      - name: Checkout helm repo
-        uses: actions/checkout@v3
-        with:
-          repository: htaic/.helm
-          path: "${{ inputs.working_dir }}/.helm"
-          ref: main
-          token: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
-
       #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
       # not authenticated and will result in permission errors.
@@ -73,7 +74,8 @@ jobs:
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
-          helm upgrade --install -f $VALUES_FILE $SERVICE_NAME ./.helm/microfrontend
+          helm repo add htaic $HELM_SOURCE
+          helm upgrade --install -f $VALUES_FILE $SERVICE_NAME $HELM_CHART
           kubectl get all --all-namespaces
         env:
           ASSUME_ROLE: ${{ inputs.ASSUME_ROLE }}
@@ -83,3 +85,5 @@ jobs:
           K8S_NAME: ${{ inputs.cluster_name }}
           SERVICE_NAME: ${{ inputs.service_name }}
           VALUES_FILE: ${{ inputs.helm_values }}
+          HELM_SOURCE: ${{ inputs.helm_source }}
+          HELM_CHART: ${{ inputs.helm_chart }}
