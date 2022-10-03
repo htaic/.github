@@ -3,8 +3,8 @@
     "description": "Docker image of NPM package",
     "iconName": "docker",
     "categories": [
-        "NPM Config",
-        "Dockerfile"
+        "Dockerfile",
+        "NPM Config"
     ],
     "filePatterns": [
     ]
