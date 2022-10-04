@@ -73,7 +73,7 @@ jobs:
 
       - name: Create NPMRC for docker
         if: inputs.npmtoken_for_docker
-        working-directory: example-code
+        working-directory: ${{ inputs.working_dir }}
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
 
