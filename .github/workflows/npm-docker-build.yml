@@ -71,6 +71,10 @@ jobs:
           username: ${{ secrets.GH_USERNAME }}
           password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
+      # Despite this being a bad idea if someone forgets to clean up the npmrc file in the docker build
+      # it is the recommended practice from NPM (although they suggest an env var which could expose the
+      # token too)
+      # https://docs.npmjs.com/docker-and-private-modules#create-and-check-in-a-project-specific-npmrc-file
       - name: Create NPMRC for docker
         if: inputs.npmtoken_for_docker
         working-directory: ${{ inputs.working_dir }}
