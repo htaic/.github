@@ -11,6 +11,7 @@ jobs:
       commit_msg: "chore: Linting from github actions"
           
   generate-doc:
+    needs: linting
     uses: htaic/.github/.github/workflows/terraform-doc.yml@main
     with:
       doc_dir: "doc"
