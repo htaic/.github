@@ -5,12 +5,17 @@ on:
     inputs:
       doc_dir:
         required: false
-        description: "Operating path for path dependent steps"
+        description: "Operating path which document template exists"
         type: string
-        default: .
+        default: "docs"
+      doc_template:
+        required: false
+        description: "Document template for terraform-docs(https://terraform-docs.io/)"
+        type: string
+        default: ".terraform-docs.yaml"
       commit_msg:
         required: false
-        description:
+        description: "Commit message for generated document"
         type: string
         default: "docs: Update from github actions"
 
@@ -33,10 +38,10 @@ jobs:
 
       - name: Render terraform docs
         run: |
-          ${{ inputs.doc_dir }}/terraform-docs -c ${{ inputs.doc_dir }}/.terraform-docs.yaml --output-file README.md .
+          ${{ inputs.doc_dir }}/terraform-docs -c ${{ inputs.doc_dir }}/${{ inputs.doc_template }} --output-file README.md .
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
         with:
           add: 'README.md'
-          message: 'docs: Update from github actions'
+          message: ${{ inputs.commit_msg }}

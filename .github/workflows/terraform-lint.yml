@@ -10,7 +10,7 @@ on:
         default: .
       commit_msg:
         required: false
-        description:
+        description: "Commit message for linted code"
         type: string
         default: "chore: Linting from github actions"
 
