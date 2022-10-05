@@ -1,0 +1,17 @@
+name: Formatting Terraform module
+
+on:
+  pull_request:
+    
+jobs:
+  linting:
+    uses: htaic/.github/.github/workflows/terraform-lint.yml@main
+    with:
+      working_dir: .
+      commit_msg: "chore: Linting from github actions"
+          
+  generate-doc:
+    uses: htaic/.github/.github/workflows/terraform-doc.yml@main
+    with:
+      doc_dir: "doc"
+      commit_msg: "docs: Update from github actions"

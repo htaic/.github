@@ -1,0 +1,42 @@
+name: Generate document of Terraform module
+
+on:
+  workflow_call:
+    inputs:
+      doc_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      commit_msg:
+        required: false
+        description:
+        type: string
+        default: "docs: Update from github actions"
+
+jobs:
+  generate-doc:
+    runs-on: ubuntu-latest
+    name: Generate document and commit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install terraform-docs
+        working-directory: ${{ inputs.doc_dir }}
+        run: |
+          curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.16.0/terraform-docs-v0.16.0-$(uname)-amd64.tar.gz
+          tar -xzf terraform-docs.tar.gz
+          chmod +x terraform-docs
+
+      - name: Render terraform docs
+        run: |
+          ${{ inputs.doc_dir }}/terraform-docs -c ${{ inputs.doc_dir }}/.terraform-docs.yaml --output-file README.md .
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'README.md'
+          message: 'docs: Update from github actions'

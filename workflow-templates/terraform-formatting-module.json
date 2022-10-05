@@ -1,0 +1,10 @@
+{
+    "name": "Terraform formatting module Workflow",
+    "description": "Formatting Terraform module",
+    "iconName": "terraform",
+    "categories": [
+        "Terraform"
+    ],
+    "filePatterns": [
+    ]
+}
