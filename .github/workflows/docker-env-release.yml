@@ -75,9 +75,9 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm dependency build
+          helm dependency update
           ls -la
-          echo "Running: helm upgrade --install -f $VALUES_FILE $SERVICE_NAME $HELM_CHART"
+          helm dependency build
           helm upgrade --install -f $VALUES_FILE $SERVICE_NAME $HELM_CHART
           kubectl get all --all-namespaces
         env:
