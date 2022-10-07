@@ -106,52 +106,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM linting
-        if: inputs.allow_lint
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn lint
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: Run Jest
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn ${{ inputs.jest_command }}
-        continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: Install Playwright
-        if: inputs.playwrite
-        working-directory: ${{ inputs.working_dir }}
-        run: npx playwright install --with-deps
-        continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: Run Playwright
-        if: inputs.playwrite
-        working-directory: ${{ inputs.working_dir }}
-        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwrite_command }}
-        continue-on-error: true
-
-      - name: Upload Jest Results - ${{ inputs.jira_project_key }}
-        if: inputs.jira_project_key != null
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
-          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
-          --form 'file=@"./junit.xml"'
-        continue-on-error: true
-    
-      - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
-        if: inputs.playwrite && inputs.jira_project_key != null
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
-          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
-          --form 'file=@"./playwright-results.xml"'
-        continue-on-error: true
-
   test:
     runs-on: ubuntu-latest
     strategy:
