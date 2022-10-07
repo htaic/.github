@@ -24,16 +24,16 @@ on:
         description: "Command to pass yarn for jest tests"
         type: string
         default: "test"
-      playwrite:
+      playwright:
         required: false
-        description: "Toggle to true to enable playwrite tests"
+        description: "Toggle to true to enable playwright tests"
         type: boolean
         default: false
-      playwrite_command:
+      playwright_command:
         required: false
-        description: "command to pass for yarn playwrite"
+        description: "command to pass for yarn playwright"
         type: string
-        default: "playwrite"
+        default: "playwright"
       jira_project_key:
         required: false
         description: "Required to push results to zephyr scale in jira"
@@ -137,7 +137,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Install Playwright
-        if: inputs.playwrite
+        if: inputs.playwright
         working-directory: ${{ inputs.working_dir }}
         run: npx playwright install --with-deps
         continue-on-error: true
@@ -145,9 +145,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Run Playwright
-        if: inputs.playwrite
+        if: inputs.playwright
         working-directory: ${{ inputs.working_dir }}
-        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwrite_command }}
+        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwright_command }}
         continue-on-error: true
 
       - name: Upload Jest Results - ${{ inputs.jira_project_key }}
@@ -160,7 +160,7 @@ jobs:
         continue-on-error: true
     
       - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
-        if: inputs.playwrite && inputs.jira_project_key != null
+        if: inputs.playwright && inputs.jira_project_key != null
         working-directory: ${{ inputs.working_dir }}
         run: |
           curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
