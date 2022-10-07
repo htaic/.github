@@ -24,6 +24,10 @@ This pipeline also contains and runs semantic versioning.
 
 This pipeline will perform audit and linting rules
 
+### npm-codescan-complete.yaml
+
+This pipeline will perform audit, linting, jest and playwrite tests.
+
 ### npm-docker-build.yaml
 
 This pipeline will build a docker image that can run npm source via npm or python http service.
