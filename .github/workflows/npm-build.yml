@@ -1,5 +1,5 @@
 # https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
-name: Build NPM package
+name: Build NPM package - will be deprecated
 
 on:
   workflow_call:

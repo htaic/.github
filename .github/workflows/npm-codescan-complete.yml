@@ -1,0 +1,215 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Scan NPM package
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      allow_lint:
+        required: false
+        description: "Enable npm linting"
+        type: boolean
+        default: true
+      allow_audit:
+        required: false
+        description: "Enable npm auditing"
+        type: boolean
+        default: true
+      jest_command:
+        required: false
+        description: "Command to pass yarn for jest tests"
+        type: string
+        default: "test"
+      playwrite:
+        required: false
+        description: "Toggle to true to enable playwrite tests"
+        type: boolean
+        default: false
+      playwrite_command:
+        required: false
+        description: "command to pass for yarn playwrite"
+        type: string
+        default: "playwrite"
+      jira_project_key:
+        required: false
+        description: "Required to push results to zephyr scale in jira"
+        type: string
+        default: ""
+    secrets:
+      GH_READPAT:
+        required: true
+      ZEPHYR_PAT:
+        required: false
+        
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM linting
+        if: inputs.allow_lint
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn lint
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+  audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Audit
+        if: inputs.allow_audit
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn audit --omit=dev --audit-level high
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM linting
+        if: inputs.allow_lint
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn lint
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Jest
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.jest_command }}
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Install Playwright
+        if: inputs.playwrite
+        working-directory: ${{ inputs.working_dir }}
+        run: npx playwright install --with-deps
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Playwright
+        if: inputs.playwrite
+        working-directory: ${{ inputs.working_dir }}
+        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwrite_command }}
+        continue-on-error: true
+
+      - name: Upload Jest Results - ${{ inputs.jira_project_key }}
+        if: inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./junit.xml"'
+        continue-on-error: true
+    
+      - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
+        if: inputs.playwrite && inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./playwright-results.xml"'
+        continue-on-error: true
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Jest
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.jest_command }}
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Install Playwright
+        if: inputs.playwrite
+        working-directory: ${{ inputs.working_dir }}
+        run: npx playwright install --with-deps
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Playwright
+        if: inputs.playwrite
+        working-directory: ${{ inputs.working_dir }}
+        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwrite_command }}
+        continue-on-error: true
+
+      - name: Upload Jest Results - ${{ inputs.jira_project_key }}
+        if: inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./junit.xml"'
+        continue-on-error: true
+    
+      - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
+        if: inputs.playwrite && inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./playwright-results.xml"'
+        continue-on-error: true
