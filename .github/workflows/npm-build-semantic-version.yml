@@ -1,31 +1,33 @@
 # https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
-name: Scan NPM package - will be deprecated
+name: Build NPM package
 
 on:
   workflow_call:
     inputs:
+      yarn_arg:
+        required: true
+        description: "Command to pass yarn for build"
+        type: string
       working_dir:
         required: false
         description: "Operating path for path dependent steps"
         type: string
         default: .
-      allow_lint:
+      trigger_release:
         required: false
-        description: "Enable npm linting"
+        description: "Toggle to true for semantic release"
         type: boolean
-        default: true
-      allow_audit:
-        required: false
-        description: "Enable npm auditing"
-        type: boolean
-        default: true
     secrets:
       GH_READPAT:
         required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
 
 jobs:
-  code-scanning:
+  build:
+    name: Semantic Release
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         node-version: ['lts/*']
@@ -33,6 +35,10 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
       - uses: actions/checkout@v3
+        with:
+          # Make sure you use the same token you are using for semantic-versioning or the github action will get
+          # confused about which token to connect with and GITHUB_TOKEN won't be valid
+          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -47,16 +53,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM Audit
-        if: inputs.allow_audit
+      - name: Run yarn build command
         working-directory: ${{ inputs.working_dir }}
-        run: yarn audit --omit=dev --audit-level high
+        run: yarn ${{ inputs.yarn_arg }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM linting
-        if: inputs.allow_lint
+      - name: Release
+        if: inputs.trigger_release
         working-directory: ${{ inputs.working_dir }}
-        run: yarn lint
+        run: npx semantic-release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}

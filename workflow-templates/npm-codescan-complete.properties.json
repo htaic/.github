@@ -1,0 +1,10 @@
+{
+    "name": "NPM Code Scan - Complete",
+    "description": "NPM code scanning",
+    "iconName": "npm",
+    "categories": [
+        "NPM Config"
+    ],
+    "filePatterns": [
+    ]
+}

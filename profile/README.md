@@ -1,5 +1,7 @@
 # Welcome to Hanwha Techwin
+
 ## Home of Innovation
+
 Please contact us for more details
 
 🙋‍♀️ We are an agile group that strives for excellence in all software we build.
@@ -7,7 +9,7 @@ Please contact us for more details
 🌈 Contribution guidelines - please request access via the appropriate methods
 Please refrain from creating repos manually and use the Jira request process.
 This will ensure uniform permissions and configuration to accelerate your development
-and deployments 
+and deployments.
 
 <!--
 **Here are some ideas to get you started:**
