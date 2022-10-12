@@ -41,7 +41,11 @@ jobs:
           ${{ inputs.doc_dir }}/terraform-docs -c ${{ inputs.doc_dir }}/${{ inputs.doc_template }} --output-file README.md .
 
       - name: Commit changes
-        uses: EndBug/add-and-commit@v9
-        with:
-          add: 'README.md'
-          message: ${{ inputs.commit_msg }}
+        id: commit
+        run: |
+          git config user.name "${{ github.actor }}" && \
+          git config user.email "<>" && \
+          git add README.md
+          git diff-index --quiet HEAD || git commit -m "${{ inputs.commit_msg }}" && \
+          git push
+        continue-on-error: false
