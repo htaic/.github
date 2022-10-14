@@ -70,11 +70,34 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: NPM linting
+        id: lint
         if: inputs.allow_lint
         working-directory: ${{ inputs.working_dir }}
         run: yarn lint
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6.2.0
+        if: github.event_name == 'pull_request'
+        env:
+          LINT: "${{ steps.lint.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### NPM Lint 🧦\`${{ steps.lint.outcome }}\`
+            <details><summary>Show lint results</summary>
+            \`\`\`\n
+            ${process.env.LINT}
+            \`\`\`
+            </details> \n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
 
   audit:
     runs-on: ubuntu-latest
@@ -85,6 +108,7 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
       - uses: actions/checkout@v3
+        if: inputs.allow_audit
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -100,11 +124,33 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: NPM Audit
-        if: inputs.allow_audit
+        id: audit
         working-directory: ${{ inputs.working_dir }}
         run: yarn audit --omit=dev --audit-level high
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6.2.0
+        if: github.event_name == 'pull_request'
+        env:
+          AUDIT: "${{ steps.audit.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`
+            <details><summary>Show audit results</summary>
+            \`\`\`\n
+            ${process.env.AUDIT}
+            \`\`\`
+            </details> \n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
 
   test:
     runs-on: ubuntu-latest
@@ -130,9 +176,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Run Jest
+        id: jest-test
         working-directory: ${{ inputs.working_dir }}
         run: yarn ${{ inputs.jest_command }}
-        continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
@@ -140,15 +186,14 @@ jobs:
         if: inputs.playwright
         working-directory: ${{ inputs.working_dir }}
         run: npx playwright install --with-deps
-        continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Run Playwright
+        id: playwright
         if: inputs.playwright
         working-directory: ${{ inputs.working_dir }}
         run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwright_command }}
-        continue-on-error: true
 
       - name: Upload Jest Results - ${{ inputs.jira_project_key }}
         if: inputs.jira_project_key != null
@@ -167,3 +212,32 @@ jobs:
           --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6.2.0
+        if: github.event_name == 'pull_request'
+        env:
+          JEST: "${{ steps.jest.outputs.stdout }}"
+          PLAY: "${{ steps.playwright.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`
+            #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`
+            <details><summary>Show jest results</summary>
+            \`\`\`\n
+            ${process.env.JEST}
+            \`\`\`
+            </details> \n
+            <details><summary>Show playwright results</summary>
+            \`\`\`\n
+            ${process.env.PLAY}
+            \`\`\`
+            </details>
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
