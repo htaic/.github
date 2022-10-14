@@ -150,8 +150,8 @@ jobs:
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     outputs:
-      jest-outcome: ${{ steps.jest-test.outcome }}
-      playwright-outcome: ${{ steps.playwright.outcome }}
+      jest-outcome: ${{ steps.jest-pr-output.output.* }}
+      playwright-outcome: ${{ steps.playwright-pr-output.output.* }}
     steps:
       - uses: actions/checkout@v3
 
@@ -205,6 +205,16 @@ jobs:
           --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
+
+      - name: PR Outputs - Jest
+        id: jest-pr-output
+        if: github.event_name == 'pull_request' && always()
+        run: echo ${{ steps.jest-test.outcome }} >> GITHUB_OUTPUT
+
+      - name: PR Outputs - Playwright
+        id: playwright-pr-output
+        if: github.event_name == 'pull_request' && always()
+        run: echo ${{ steps.playwright.outcome }} >> GITHUB_OUTPUT
 
       # - name: Update Pull Request
       #   uses: actions/github-script@v6.2.0
