@@ -206,25 +206,25 @@ jobs:
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
 
-      - name: Update Pull Request
-        uses: actions/github-script@v6.2.0
-        if: github.event_name == 'pull_request' && always()
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
-            #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+      # - name: Update Pull Request
+      #   uses: actions/github-script@v6.2.0
+      #   if: github.event_name == 'pull_request' && always()
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     script: |
+      #       const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
+      #       #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
+      #       *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+      #       github.rest.issues.createComment({
+      #         issue_number: context.issue.number,
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         body: output
+      #       })
 
   update-pr:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && always()
     needs: [lint,audit,test]
     steps:
       - name: Update Pull Request
