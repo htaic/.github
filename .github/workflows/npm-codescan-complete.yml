@@ -120,7 +120,7 @@ jobs:
             const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`
             <details><summary>Show audit results</summary>\n
             \`\`\`\n
-            ${{ steps.audit.outputs.* }}
+            ${{join(steps.audit.outputs.*, '\n')}}
             \`\`\`
             </details> \n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
