@@ -80,16 +80,14 @@ jobs:
       - name: Update Pull Request
         uses: actions/github-script@v6.2.0
         if: github.event_name == 'pull_request'
-        env:
-          LINT: "${{ steps.lint.outputs.stdout }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### NPM Lint 🧦\`${{ steps.lint.outcome }}\`
             <details><summary>Show lint results</summary>
             \`\`\`\n
-            ${process.env.LINT}
-            \`\`\`
+            "${{ steps.lint.outputs.stdout }}"
+            \`\`\`\n
             </details> \n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             github.rest.issues.createComment({
