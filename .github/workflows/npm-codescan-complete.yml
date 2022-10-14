@@ -107,7 +107,7 @@ jobs:
       - name: NPM Audit
         id: audit
         working-directory: ${{ inputs.working_dir }}
-        run: yarn audit --omit=dev --audit-level high
+        run: yarn audit --omit=dev --audit-level high >> $GITHUB_OUTPUT
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
