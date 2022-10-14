@@ -80,6 +80,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
+      - name: debug
+        run: echo ${{ steps.lint.outputs.stdout }}
+
       - name: Update Pull Request
         uses: actions/github-script@v6.2.0
         if: github.event_name == 'pull_request'
@@ -89,7 +92,7 @@ jobs:
             const output = `#### NPM Lint 🧦\`${{ steps.lint.outcome }}\`
             <details><summary>Show lint results</summary>
             \`\`\`\n
-            "${{ steps.lint.outputs.stdout }}"
+            ${{ steps.lint.outputs.stdout }}
             \`\`\`\n
             </details> \n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
