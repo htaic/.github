@@ -225,7 +225,6 @@ jobs:
   update-pr:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    needs: [lint,audit,test]
     steps:
       - name: Update Pull Request
         uses: actions/github-script@v6.3.3
