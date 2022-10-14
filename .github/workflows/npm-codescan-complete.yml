@@ -53,6 +53,8 @@ jobs:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    outputs:
+      outcome: ${{ steps.lint.outcome }}
     steps:
       - uses: actions/checkout@v3
 
@@ -99,6 +101,8 @@ jobs:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    outputs:
+      outcome: ${{ steps.audit.outcome }}
     steps:
       - uses: actions/checkout@v3
         if: inputs.allow_audit
@@ -145,6 +149,9 @@ jobs:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    outputs:
+      jest-outcome: ${{ steps.jest-test.outcome }}
+      playwright-outcome: ${{ steps.playwright.outcome }}
     steps:
       - uses: actions/checkout@v3
 
@@ -225,10 +232,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Lint outcome 🧦\`${{ jobs.lint.steps.lint.outcome }}\`\n
-            const output = `#### NPM Audit 🖌️\`${{ jobs.audit.steps.audit.outcome }}\`\n
-            const output = `#### Jest Tests 🤡\`${{ jobs.tests.steps.jest-test.outcome }}\`\n
-            const output = `#### Playwrite Tests ▶️\`${{ jobs.tests.steps.playwright.outcome }}\`\n
+            const output = `#### Lint outcome 🧦\`${{ jobs.lint.outputs.outcome }}\`\n
+            `#### NPM Audit 🖌️\`${{ jobs.audit.outputs.outcome }}\`\n
+            `#### Jest Tests 🤡\`${{ jobs.tests.outputs.jest-outcome }}\`\n
+            `#### Playwrite Tests ▶️\`${{ jobs.tests.outputs.playwright-outcome }}\`\n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
