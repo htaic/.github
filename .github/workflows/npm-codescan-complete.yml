@@ -232,10 +232,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Lint outcome 🧦\`${{ jobs.lint.outputs.outcome }}\`\n
-            `#### NPM Audit 🖌️\`${{ jobs.audit.outputs.outcome }}\`\n
-            `#### Jest Tests 🤡\`${{ jobs.tests.outputs.jest-outcome }}\`\n
-            `#### Playwrite Tests ▶️\`${{ jobs.tests.outputs.playwright-outcome }}\`\n
+            const output = `#### Lint outcome 🧦\`${{ needs.lint.outputs.outcome }}\`\n
+            `#### NPM Audit 🖌️\`${{ needs.audit.outputs.outcome }}\`\n
+            `#### Jest Tests 🤡\`${{ needs.tests.outputs.jest-outcome }}\`\n
+            `#### Playwrite Tests ▶️\`${{ needs.tests.outputs.playwright-outcome }}\`\n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
