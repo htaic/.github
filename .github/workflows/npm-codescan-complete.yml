@@ -150,8 +150,8 @@ jobs:
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     outputs:
-      jest-outcome: ${{ steps.jest-pr-output.output.stdout }}
-      playwright-outcome: ${{ steps.playwright-pr-output.output.stdout }}
+      jest-outcome: ${{ steps.jest-pr-output.outputs.stdout }}
+      playwright-outcome: ${{ steps.playwright-pr-output.outputs.stdout }}
     steps:
       - uses: actions/checkout@v3
 
