@@ -114,20 +114,13 @@ jobs:
       - name: Update Pull Request
         uses: actions/github-script@v6.2.0
         if: github.event_name == 'pull_request'
-        env:
-          AUDIT: "${{ steps.audit.outputs.stdout }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`
-            <details><summary>Show audit env results</summary>
+            <details><summary>Show audit results</summary>\n
             \`\`\`\n
-            ${process.env.AUDIT}
-            \`\`\`
-            </details> \n
-            <details><summary>Show audit results</summary>
-            \`\`\`\n
-            ${{ steps.audit.outcome.stdout }}
+            ${{ steps.audit.outputs.* }}
             \`\`\`
             </details> \n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
