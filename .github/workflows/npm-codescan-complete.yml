@@ -53,8 +53,8 @@ jobs:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    outputs:
-      outcome: ${{ steps.lint.outcome }}
+    # outputs:
+    #   outcome: ${{ steps.lint.outcome }}
     steps:
       - uses: actions/checkout@v3
 
@@ -79,20 +79,20 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      # - name: Update Pull Request
-      #   uses: actions/github-script@v6.2.0
-      #   if: github.event_name == 'pull_request'
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     script: |
-      #       const output = `#### Lint outcome 🧦\`${{ steps.lint.outcome }}\`\n
-      #       *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-      #       github.rest.issues.createComment({
-      #         issue_number: context.issue.number,
-      #         owner: context.repo.owner,
-      #         repo: context.repo.repo,
-      #         body: output
-      #       })
+      - name: Update Pull Request
+        uses: actions/github-script@v6.2.0
+        if: github.event_name == 'pull_request'  && always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Lint outcome 🧦\`${{ steps.lint.outcome }}\`\n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
 
   audit:
     runs-on: ubuntu-latest
@@ -101,8 +101,8 @@ jobs:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    outputs:
-      outcome: ${{ steps.audit.outcome }}
+    # outputs:
+    #   outcome: ${{ steps.audit.outcome }}
     steps:
       - uses: actions/checkout@v3
         if: inputs.allow_audit
@@ -127,20 +127,20 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      # - name: Update Pull Request
-      #   uses: actions/github-script@v6.3.3
-      #   if: github.event_name == 'pull_request'
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     script: |
-      #       const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`\n
-      #       *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-      #       github.rest.issues.createComment({
-      #         issue_number: context.issue.number,
-      #         owner: context.repo.owner,
-      #         repo: context.repo.repo,
-      #         body: output
-      #       })
+      - name: Update Pull Request
+        uses: actions/github-script@v6.3.3
+        if: github.event_name == 'pull_request' && always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`\n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
 
   test:
     runs-on: ubuntu-latest
@@ -149,9 +149,9 @@ jobs:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    outputs:
-      jest-outcome: ${{ steps.jest-pr-output.outputs.stdout }}
-      playwright-outcome: ${{ steps.playwright-pr-output.outputs.stdout }}
+    # outputs:
+    #   jest-outcome: ${{ steps.jest-test.outcome }}
+    #   playwright-outcome: ${{ steps.playwright.outcome }}
     steps:
       - uses: actions/checkout@v3
 
@@ -206,46 +206,14 @@ jobs:
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
 
-      - name: PR Outputs - Jest
-        id: jest-pr-output
-        if: github.event_name == 'pull_request' && always()
-        run: echo ${{ steps.jest-test.outcome }}
-
-      - name: PR Outputs - Playwright
-        id: playwright-pr-output
-        if: github.event_name == 'pull_request' && always()
-        run: echo ${{ steps.playwright.outcome }}
-
-      # - name: Update Pull Request
-      #   uses: actions/github-script@v6.2.0
-      #   if: github.event_name == 'pull_request' && always()
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     script: |
-      #       const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
-      #       #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
-      #       *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-      #       github.rest.issues.createComment({
-      #         issue_number: context.issue.number,
-      #         owner: context.repo.owner,
-      #         repo: context.repo.repo,
-      #         body: output
-      #       })
-
-  update-pr:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && always()
-    needs: [lint,audit,test]
-    steps:
       - name: Update Pull Request
         uses: actions/github-script@v6.3.3
+        if: github.event_name == 'pull_request' && always()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Lint outcome 🧦\`${{ needs.lint.outputs.outcome }}\`\n
-            `#### NPM Audit 🖌️\`${{ needs.audit.outputs.outcome }}\`\n
-            `#### Jest Tests 🤡\`${{ needs.tests.outputs.jest-outcome }}\`\n
-            `#### Playwrite Tests ▶️\`${{ needs.tests.outputs.playwright-outcome }}\`\n
+            const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
+            #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -253,4 +221,26 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
+
+  # update-pr:
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'pull_request' && always()
+  #   needs: [lint,audit,test]
+  #   steps:
+  #     - name: Update Pull Request
+  #       uses: actions/github-script@v6.3.3
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const output = `#### Lint outcome 🧦\`${{ needs.lint.outputs.outcome }}\`\n
+  #           `#### NPM Audit 🖌️\`${{ needs.audit.outputs.outcome }}\`\n
+  #           `#### Jest Tests 🤡\`${{ needs.tests.outputs.jest-outcome }}\`\n
+  #           `#### Playwrite Tests ▶️\`${{ needs.tests.outputs.playwright-outcome }}\`\n
+  #           *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+  #           github.rest.issues.createComment({
+  #             issue_number: context.issue.number,
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             body: output
+  #           })
 
