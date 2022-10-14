@@ -48,9 +48,6 @@ on:
 jobs:
   # lint:
   #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       shell: bash
   #   strategy:
   #     matrix:
   #       node-version: ['lts/*']
@@ -104,25 +101,36 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM Audit
+      # - name: NPM Audit
+      #   id: audit
+      #   working-directory: ${{ inputs.working_dir }}
+      #   run: yarn audit --omit=dev --audit-level high
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Audit script
+        uses: actions/github-script@v6.3.3
         id: audit
         working-directory: ${{ inputs.working_dir }}
-        run: yarn audit --omit=dev --audit-level high >> $GITHUB_OUTPUT
+        with:
+          script: yarn audit --omit=dev --audit-level high
+          result-encoding: string
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Update Pull Request
-        uses: actions/github-script@v6.2.0
+        uses: actions/github-script@v6.3.3
         if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`
-            <details><summary>Show audit results</summary>\n
+            <details><summary>Show jest results</summary>
             \`\`\`\n
-            ${{join(steps.audit.outputs.*, '\n')}}
-            \`\`\`
+            ${{steps.audit.outputs.result}}
+            \`\`\`\n
             </details> \n
+
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
