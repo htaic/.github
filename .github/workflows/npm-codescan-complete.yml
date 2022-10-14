@@ -46,39 +46,39 @@ on:
         required: false
         
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    strategy:
-      matrix:
-        node-version: ['lts/*']
-        # node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    steps:
-      - uses: actions/checkout@v3
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   strategy:
+  #     matrix:
+  #       node-version: ['lts/*']
+  #       # node-version: [14.x, 16.x, 18.x]
+  #       # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          registry-url: https://npm.pkg.github.com/
-          scope: '@htaic'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #         registry-url: https://npm.pkg.github.com/
+  #         scope: '@htaic'
 
-      - name: Install dependencies
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+  #     - name: Install dependencies
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: yarn
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM linting
-        id: lint
-        if: inputs.allow_lint
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn lint
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+  #     - name: NPM linting
+  #       id: lint
+  #       if: inputs.allow_lint
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: yarn lint
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
   audit:
     runs-on: ubuntu-latest
@@ -131,92 +131,92 @@ jobs:
               body: output
             })
 
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['lts/*']
-        # node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    steps:
-      - uses: actions/checkout@v3
+  # test:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: ['lts/*']
+  #       # node-version: [14.x, 16.x, 18.x]
+  #       # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          registry-url: https://npm.pkg.github.com/
-          scope: '@htaic'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #         registry-url: https://npm.pkg.github.com/
+  #         scope: '@htaic'
 
-      - name: Install dependencies
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+  #     - name: Install dependencies
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: yarn
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Run Jest
-        id: jest-test
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn ${{ inputs.jest_command }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+  #     - name: Run Jest
+  #       id: jest-test
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: yarn ${{ inputs.jest_command }}
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Install Playwright
-        if: inputs.playwright
-        working-directory: ${{ inputs.working_dir }}
-        run: npx playwright install --with-deps
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+  #     - name: Install Playwright
+  #       if: inputs.playwright
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: npx playwright install --with-deps
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Run Playwright
-        id: playwright
-        if: inputs.playwright
-        working-directory: ${{ inputs.working_dir }}
-        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwright_command }}
+  #     - name: Run Playwright
+  #       id: playwright
+  #       if: inputs.playwright
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwright_command }}
 
-      - name: Upload Jest Results - ${{ inputs.jira_project_key }}
-        if: inputs.jira_project_key != null
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
-          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
-          --form 'file=@"./junit.xml"'
-        continue-on-error: true
+  #     - name: Upload Jest Results - ${{ inputs.jira_project_key }}
+  #       if: inputs.jira_project_key != null
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: |
+  #         curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+  #         --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+  #         --form 'file=@"./junit.xml"'
+  #       continue-on-error: true
     
-      - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
-        if: inputs.playwright && inputs.jira_project_key != null
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
-          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
-          --form 'file=@"./playwright-results.xml"'
-        continue-on-error: true
+  #     - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
+  #       if: inputs.playwright && inputs.jira_project_key != null
+  #       working-directory: ${{ inputs.working_dir }}
+  #       run: |
+  #         curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+  #         --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+  #         --form 'file=@"./playwright-results.xml"'
+  #       continue-on-error: true
 
-      - name: Update Pull Request
-        uses: actions/github-script@v6.2.0
-        if: github.event_name == 'pull_request'
-        env:
-          JEST: "${{ steps.jest.outputs.stdout }}"
-          PLAY: "${{ steps.playwright.outputs.stdout }}"
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`
-            #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`
-            <details><summary>Show jest results</summary>
-            \`\`\`\n
-            ${process.env.JEST}
-            \`\`\`
-            </details> \n
-            <details><summary>Show playwright results</summary>
-            \`\`\`\n
-            ${process.env.PLAY}
-            \`\`\`
-            </details>
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+  #     - name: Update Pull Request
+  #       uses: actions/github-script@v6.2.0
+  #       if: github.event_name == 'pull_request'
+  #       env:
+  #         JEST: "${{ steps.jest.outputs.stdout }}"
+  #         PLAY: "${{ steps.playwright.outputs.stdout }}"
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`
+  #           #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`
+  #           <details><summary>Show jest results</summary>
+  #           \`\`\`\n
+  #           ${process.env.JEST}
+  #           \`\`\`
+  #           </details> \n
+  #           <details><summary>Show playwright results</summary>
+  #           \`\`\`\n
+  #           ${process.env.PLAY}
+  #           \`\`\`
+  #           </details>
+  #           *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+  #           github.rest.issues.createComment({
+  #             issue_number: context.issue.number,
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             body: output
+  #           })
