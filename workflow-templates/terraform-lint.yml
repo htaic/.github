@@ -1,0 +1,23 @@
+name: Generate Terraform documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/*
+      - config/*
+      - deployments/*
+      - modules/*
+      - scripts/*
+
+jobs:
+  terraform-lint:
+    if: github.ref == 'refs/heads/main'
+    uses: htaic/.github/.github/workflows/terraform-lint.yml@main
+    with:
+      # optional 
+      working_dir: 
+      commit_msg: 
+    secrets: inherit

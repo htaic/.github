@@ -1,0 +1,127 @@
+name: Terraform init, plan and apply
+
+on:
+  workflow_call:
+    inputs:
+      target_deployment:
+        required: true
+        description: "Terraform stack to deploy (example: k8s)"
+        type: string
+      target_region:
+        required: false
+        description: "Region to deploy the stack to (example: us-west-2)"
+        type: string
+        default: "us-west-2"
+      target_cloud:
+        required: false
+        description: "Cloud to deploy the stack to (example: aws)"
+        type: string
+        default: "aws"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    name: Terraform init, plan and apply
+    steps:
+      - name: Checkout terraform repo
+        uses: actions/checkout@v3
+        with:
+          ref: distributed-ingress
+          token: ${{ secrets.PAT }}
+
+      - name: Checkout state repo
+        uses: actions/checkout@v3
+        with:
+          repository: htaic/tfstate
+          path: terraformState
+          ref: main
+          token: ${{ secrets.PAT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.2.8
+
+      - name: Configure git
+        id: git-config
+        run: git config --global url."https://${{ secrets.GH_USERNAME }}:${{ secrets.PAT }}@github.com/htaic".insteadOf "https://github.com/htaic"
+
+      - name: Make terraform configuration
+        id: make-tf-config
+        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
+        run: ../../../scripts/setup.sh "${{ inputs.target_deployment }}" "${{ inputs.target_region }}"
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -no-color
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
+        run: terraform plan -out=tfplan -no-color -input=false -compact-warnings
+        continue-on-error: true
+        env:
+          TF_IN_AUTOMATION: true
+          AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
+
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.PAT }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            <details><summary>Validation Output</summary>
+
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Apply
+        id: apply
+        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
+        run: terraform apply tfplan
+        env:
+          TF_IN_AUTOMATION: true        
+          AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
+        continue-on-error: true
+
+      - name: Save State File
+        run: |
+          cd ./terraformState && \
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "update ${{ inputs.target_deployment }} state" && \
+          git push origin main
+        continue-on-error: true
