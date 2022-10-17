@@ -19,9 +19,9 @@ on:
         default: "aws"
 
 jobs:
-    defaults:
-      run:
-        shell: bash
+  terraform:
+    runs-on: ubuntu-latest
+    name: Terraform init, plan and apply
     steps:
       - name: Checkout terraform repo
         uses: actions/checkout@v3
