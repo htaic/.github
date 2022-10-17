@@ -1,0 +1,24 @@
+name: Terraform init, plan and apply
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/*
+      - config/*
+      - deployments/*
+      - modules/*
+      - scripts/*
+
+jobs:
+  terraform-apply:
+    if: github.ref == 'refs/heads/main'
+    uses: htaic/.github/.github/workflows/terraform-apply.yml@main
+    with:
+      target_deployment: 
+      #optional 
+      target_region:
+      target_cloud: 
+    secrets: inherit

@@ -1,0 +1,53 @@
+name: Generate Terraform documentation
+
+on:
+  workflow_call:
+    inputs:
+      doc_dir:
+        required: false
+        description: "Directory containing terraform files to document"
+        type: string
+        default: "docs"
+      doc_template:
+        required: false
+        description: "Document template for terraform-docs (https://terraform-docs.io/)"
+        type: string
+        default: ".terraform-docs.yaml"
+      commit_msg:
+        required: false
+        description: "Commit message for generated documentation"
+        type: string
+        default: "docs: Update from github actions"
+
+jobs:
+  generate-doc:
+    runs-on: ubuntu-latest
+    name: Generate documentation and commit changes
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install terraform-docs
+        working-directory: ${{ inputs.doc_dir }}
+        run: |
+          LATEST_VERSION=$(curl -Ls -o /dev/null -w %{url_effective} https://github.com/terraform-docs/terraform-docs/releases/latest | awk -F / '{print substr($NF,2);}')
+          echo "Installing terrform-docs v${LATEST_VERSION}"
+          curl -sSLo ./terraform-docs.tar.gz "https://github.com/terraform-docs/terraform-docs/releases/download/v${LATEST_VERSION}/terraform-docs-v${LATEST_VERSION}-$(uname | tr '[:upper:]' '[:lower:]')-amd64.tar.gz"
+          tar -xzf terraform-docs.tar.gz
+          chmod +x terraform-docs
+
+      - name: Render terraform docs
+        run: |
+          ${{ inputs.doc_dir }}/terraform-docs -c ${{ inputs.doc_dir }}/${{ inputs.doc_template }} --recursive --output-file README.md .
+
+      - name: Commit changes
+        id: commit
+        run: |
+          git config user.name "${{ github.actor }}" && \
+          git config user.email "<>" && \
+          git add README.md
+          git diff-index --quiet HEAD || git commit -m "${{ inputs.commit_msg }}" && \
+          git push
+        continue-on-error: false

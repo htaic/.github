@@ -1,0 +1,10 @@
+{
+    "name": "Generate Terraform documentation",
+    "description": "Uses terraform-docs to automatically generate documentation for a folder",
+    "iconName": "terraform",
+    "categories": [
+        "terraform"
+    ],
+    "filePatterns": [
+    ]
+}

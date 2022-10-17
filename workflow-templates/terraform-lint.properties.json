@@ -1,0 +1,10 @@
+{
+    "name": "Terraform linter",
+    "description": "Runs terraform fmt in a folder recursively",
+    "iconName": "terraform",
+    "categories": [
+        "terraform"
+    ],
+    "filePatterns": [
+    ]
+}

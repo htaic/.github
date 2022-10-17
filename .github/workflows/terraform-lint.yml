@@ -1,0 +1,43 @@
+name: Lint Terraform
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        required: false
+        description: "Directory containing terraform files to lint"
+        type: string
+        default: .
+      commit_msg:
+        required: false
+        description: "Commit message for linted code"
+        type: string
+        default: "chore: Linting from github actions"
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    name: Linting code and commit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform fmt
+        working-directory: ${{ inputs.working_dir }}
+        id: fmt
+        run: terraform fmt
+
+      - name: Commit changes
+        id: commit
+        run: |
+          git config user.name "${{ github.actor }}" && \
+          git config user.email "<>" && \
+          git add --all
+          git diff-index --quiet HEAD || git commit -m "${{ inputs.commit_msg }}" && \
+          git push
+        continue-on-error: false
