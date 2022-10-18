@@ -17,7 +17,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     uses: htaic/.github/.github/workflows/terraform-doc.yml@main
     with:
-      #optional 
+      # optional 
       doc_dir:
       doc_template: 
       commit_msg: 
