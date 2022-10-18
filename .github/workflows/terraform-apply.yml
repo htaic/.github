@@ -19,9 +19,9 @@ on:
         default: "aws"
 
 jobs:
-    defaults:
-      run:
-        shell: bash
+  terraform:
+    runs-on: ubuntu-latest
+    name: Terraform init, plan and apply
     steps:
       - name: Checkout terraform repo
         uses: actions/checkout@v3
@@ -53,10 +53,12 @@ jobs:
 
       - name: Terraform Init
         id: init
+        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform init -no-color
 
       - name: Terraform Validate
         id: validate
+        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform validate -no-color
 
       - name: Terraform Plan
@@ -117,8 +119,8 @@ jobs:
         continue-on-error: true
 
       - name: Save State File
+        working-directory: ./terraformState
         run: |
-          cd ./terraformState && \
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
