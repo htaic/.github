@@ -17,6 +17,11 @@ on:
         description: "Cloud to deploy the stack to (example: aws)"
         type: string
         default: "aws"
+      target_environment:
+        required: false
+        description: "Environment to deploy (example: dev, empty for global)"
+        type: string
+        default: ""
 
 jobs:
   terraform:
@@ -49,7 +54,7 @@ jobs:
       - name: Make terraform configuration
         id: make-tf-config
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
-        run: ../../../scripts/setup.sh "${{ inputs.target_deployment }}" "${{ inputs.target_region }}"
+        run: ../../../scripts/setup.sh "${{ inputs.target_deployment }}" "${{ inputs.target_region }}" "${{ inputs.target_environment }}"
 
       - name: Terraform Init
         id: init
@@ -79,11 +84,10 @@ jobs:
           EOF
           )
           echo "PLAN<<EOF" >> $GITHUB_ENV
-          echo "${plan:0:65536}" >> $GITHUB_ENV
+          echo "${plan:0:60000}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - uses: actions/github-script@v6
-        if: github.event_name == 'pull_request'
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         env:
           PLAN: "terraform\n${{ steps.format-plan.outputs.stdout }}"
@@ -121,6 +125,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform apply tfplan
         env:
@@ -130,6 +135,7 @@ jobs:
         continue-on-error: true
 
       - name: Save State File
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         working-directory: ./terraformState
         run: |
           git config user.name "GitHub Actions Bot" && \
