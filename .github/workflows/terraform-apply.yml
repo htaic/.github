@@ -89,13 +89,11 @@ jobs:
           ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
           EOF
           )
-          echo "PLAN<<EOF" >> $GITHUB_ENV
-          echo "${plan:0:60000}" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "formatted_output=${plan:0:60000}" >> $GITHUB_ENV
 
       - uses: actions/github-script@v6
         env:
-          PLAN: "terraform\n${{ steps.format-plan.outputs.stdout }}"
+          PLAN: "terraform\n${{ env.formatted_output }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
