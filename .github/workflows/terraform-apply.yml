@@ -82,15 +82,6 @@ jobs:
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
 
-      - name: Format Plan
-        id: format-plan
-        run: |
-          plan=$(cat <<'EOF'
-          ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
-          EOF
-          )
-          echo "${plan:0:60000}" >&1
-
       - uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -110,7 +101,7 @@ jobs:
             <details><summary>Show Plan</summary>
 
             \`\`\`\n
-            ${{ steps.format-plan.outputs.stdout }}
+            ${{ steps.plan.outputs.stdout }}
             \`\`\`
 
             </details>
