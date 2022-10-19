@@ -22,6 +22,15 @@ on:
         description: "Environment to deploy (example: dev, empty for global)"
         type: string
         default: ""
+    secrets:
+      PAT:
+        required: true
+      GH_USERNAME:
+        required: true
+      APPID:
+        required: true
+      APPSECRET:
+        required: true     
 
 jobs:
   terraform:
@@ -30,9 +39,6 @@ jobs:
     steps:
       - name: Checkout terraform repo
         uses: actions/checkout@v3
-        with:
-          ref: distributed-ingress
-          token: ${{ secrets.PAT }}
 
       - name: Checkout state repo
         uses: actions/checkout@v3
@@ -45,7 +51,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.2.8
+          terraform_version: 1.3.0
 
       - name: Configure git
         id: git-config
@@ -88,11 +94,10 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - uses: actions/github-script@v6
-        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         env:
           PLAN: "terraform\n${{ steps.format-plan.outputs.stdout }}"
         with:
-          github-token: ${{ secrets.PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
