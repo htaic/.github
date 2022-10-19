@@ -89,7 +89,7 @@ jobs:
           ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
           EOF
           )
-          echo "${plan:0:60000}"
+          echo "${plan:0:60000}" >&1
 
       - uses: actions/github-script@v6
         with:
