@@ -62,6 +62,17 @@ jobs:
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: ../../../scripts/setup.sh "${{ inputs.target_deployment }}" "${{ inputs.target_region }}" "${{ inputs.target_environment }}"
 
+      - name: Set terraform workspace
+        id: tf-workspace
+        run: |
+          echo ${{ join(inputs.target_deployment inputs.target_region inputs.target_environment,"-") }}
+
+          if [[ -z "${{ inputs.target_environment }}" ]]; then
+            echo "::set-output name=name::${{ inputs.target_deployment }}-${{ inputs.target_region }}"
+          else
+            echo "::set-output name=name::${{ inputs.target_deployment }}-${{ inputs.target_region }}-${{ inputs.target_environment }}"
+          fi
+
       - name: Terraform Init
         id: init
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
@@ -69,14 +80,14 @@ jobs:
           echo "Terraform Workspace: ${TF_WORKSPACE}"
           terraform init -no-color
         env:
-          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
+          TF_WORKSPACE: ${{ steps.tf-workspace.outputs.name }}
 
       - name: Terraform Validate
         id: validate
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform validate -no-color
         env:
-          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
+          TF_WORKSPACE: ${{ join(inputs.target_deployment inputs.target_region inputs.target_environment,"-") }}
 
       - name: Terraform Plan
         id: plan
