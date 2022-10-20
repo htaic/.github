@@ -66,9 +66,9 @@ jobs:
         id: tf-workspace
         run: |
           if [[ -z "${{ inputs.target_environment }}" ]]; then
-            echo "::set-output name=name::${{ inputs.target_deployment }}-${{ inputs.target_region }}"
+            echo "name=${{ inputs.target_deployment }}-${{ inputs.target_region }}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=name::${{ inputs.target_deployment }}-${{ inputs.target_region }}-${{ inputs.target_environment }}"
+            echo "name=${{ inputs.target_deployment }}-${{ inputs.target_region }}-${{ inputs.target_environment }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Terraform Init
