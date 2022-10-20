@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: htaic/tfstate
-          path: terraformState
+          path: terraform.tfstate.d
           ref: main
           token: ${{ secrets.PAT }}
 
@@ -66,11 +66,15 @@ jobs:
         id: init
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform init -no-color
+        env:
+          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
 
       - name: Terraform Validate
         id: validate
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform validate -no-color
+        env:
+          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
 
       - name: Terraform Plan
         id: plan
@@ -78,6 +82,7 @@ jobs:
         run: terraform plan -out=tfplan -no-color -input=false -compact-warnings
         continue-on-error: true
         env:
+          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
           TF_IN_AUTOMATION: true
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
@@ -122,6 +127,7 @@ jobs:
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform apply tfplan
         env:
+          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
           TF_IN_AUTOMATION: true        
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
@@ -129,7 +135,7 @@ jobs:
 
       - name: Save State File
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        working-directory: ./terraformState
+        working-directory: ./terraform.tfstate.d
         run: |
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
