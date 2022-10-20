@@ -65,7 +65,10 @@ jobs:
       - name: Terraform Init
         id: init
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
-        run: terraform init -no-color
+        run: |
+          echo "Workspace: ${TF_WORKSPACE}"
+          terraform init -no-color
+          ls ../../../terraform.tfstate.d
         env:
           TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
 
