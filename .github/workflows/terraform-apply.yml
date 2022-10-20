@@ -65,8 +65,6 @@ jobs:
       - name: Set terraform workspace
         id: tf-workspace
         run: |
-          echo ${{ join(inputs.target_deployment inputs.target_region inputs.target_environment,"-") }}
-
           if [[ -z "${{ inputs.target_environment }}" ]]; then
             echo "::set-output name=name::${{ inputs.target_deployment }}-${{ inputs.target_region }}"
           else
@@ -87,7 +85,7 @@ jobs:
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform validate -no-color
         env:
-          TF_WORKSPACE: ${{ join(inputs.target_deployment inputs.target_region inputs.target_environment,"-") }}
+          TF_WORKSPACE: ${{ steps.tf-workspace.outputs.name }}
 
       - name: Terraform Plan
         id: plan
@@ -95,7 +93,7 @@ jobs:
         run: terraform plan -out=tfplan -no-color -input=false -compact-warnings
         continue-on-error: true
         env:
-          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
+          TF_WORKSPACE: ${{ steps.tf-workspace.outputs.name }}
           TF_IN_AUTOMATION: true
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
@@ -125,7 +123,7 @@ jobs:
 
             </details>
 
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Terraform Workspace: \`${{ env.TF_WORKSPACE }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Terraform Workspace: \`${{ steps.tf-workspace.outputs.name }}\`, Workflow: \`${{ github.workflow }}\`*`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -140,7 +138,7 @@ jobs:
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform apply tfplan
         env:
-          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
+          TF_WORKSPACE: ${{ steps.tf-workspace.outputs.name }}
           TF_IN_AUTOMATION: true        
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
