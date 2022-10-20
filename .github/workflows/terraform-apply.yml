@@ -65,10 +65,10 @@ jobs:
       - name: Set terraform workspace
         id: tf-workspace
         run: |
-          if [[ -z "${{ inputs.target_environment }}" ]]; then
-            echo "name=${{ inputs.target_deployment }}-${{ inputs.target_region }}" >> $GITHUB_OUTPUT
+          if [[ "${{ inputs.target_deployment }}" == "global" ]]; then
+            echo "name=${{ target_cloud }}-${{ inputs.target_deployment }}" >> $GITHUB_OUTPUT
           else
-            echo "name=${{ inputs.target_deployment }}-${{ inputs.target_region }}-${{ inputs.target_environment }}" >> $GITHUB_OUTPUT
+            echo "name=${{ target_cloud }}-${{ inputs.target_region }}-${{ inputs.target_environment }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Terraform Init
