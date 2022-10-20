@@ -66,18 +66,17 @@ jobs:
         id: init
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: |
-          echo "Workspace: ${TF_WORKSPACE}"
+          echo "Terraform Workspace: ${TF_WORKSPACE}"
           terraform init -no-color
-          ls ../../../terraform.tfstate.d
         env:
-          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
+          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
 
       - name: Terraform Validate
         id: validate
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform validate -no-color
         env:
-          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
+          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
 
       - name: Terraform Plan
         id: plan
@@ -85,7 +84,7 @@ jobs:
         run: terraform plan -out=tfplan -no-color -input=false -compact-warnings
         continue-on-error: true
         env:
-          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
+          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
           TF_IN_AUTOMATION: true
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
@@ -115,7 +114,7 @@ jobs:
 
             </details>
 
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Terraform Workspace: \`${{ env.TF_WORKSPACE }}\`, Workflow: \`${{ github.workflow }}\`*`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -130,7 +129,7 @@ jobs:
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform apply tfplan
         env:
-          TF_WORKSPACE: join(${{ inputs.target_deployment }},${{ inputs.target_region }},${{ inputs.target_environment }},"-")
+          TF_WORKSPACE: ${{ join(inputs.target_deployment,inputs.target_region,inputs.target_environment,"-") }}
           TF_IN_AUTOMATION: true        
           AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
