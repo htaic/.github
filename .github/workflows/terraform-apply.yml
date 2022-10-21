@@ -31,6 +31,8 @@ on:
         required: true
       APPSECRET:
         required: true     
+      REGION:
+        required: true     
 
 jobs:
   terraform:
@@ -47,6 +49,13 @@ jobs:
           path: terraform.tfstate.d
           ref: main
           token: ${{ secrets.PAT }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.APPID }}
+          aws-secret-access-key: ${{ secrets.APPSECRET }}
+          aws-region: ${{ secrets.REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
