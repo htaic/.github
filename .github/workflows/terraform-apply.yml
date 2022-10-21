@@ -68,7 +68,7 @@ jobs:
           if [[ "${{ inputs.target_deployment }}" == "global" ]]; then
             echo "name=${{ inputs.target_cloud }}-${{ inputs.target_deployment }}" >> $GITHUB_OUTPUT
           else
-            echo "name=${{ inputs.inputs.target_region }}-${{ inputs.target_environment }}" >> $GITHUB_OUTPUT
+            echo "name=${{ inputs.target_cloud }}-${{ inputs.target_region }}-${{ inputs.target_environment }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Terraform Init
