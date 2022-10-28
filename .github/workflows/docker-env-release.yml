@@ -75,7 +75,6 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm uninstall --namespace hanwha $SERVICE_NAME
           helm upgrade --install --atomic --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART
           kubectl get all --all-namespaces
         env:
