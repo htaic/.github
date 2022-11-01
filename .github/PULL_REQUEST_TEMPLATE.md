@@ -13,7 +13,7 @@
 ### Issues Addressed / 해결된 문제
 * [KEY-123](https://htw-cloud.atlassian.net/browse/KEY-123)
 
-### Checklist
+### Checklist / 체크리스트
 <!--- Used to represent the acceptance criteria of the Jira ticket / 
 Jira 티켓의 허용 기준을 나타내는 데 사용됩니다. -->
 - [ ] Meets Design Standards / 설계 표준 충족
