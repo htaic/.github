@@ -7,10 +7,6 @@ on:
         required: true
         description: "Name of docker registry to publish. Does not need ghcr.io/htaic/ in front."
         type: string
-      yarn_arg:
-        required: true
-        description: "Command to pass yarn for build"
-        type: string
       working_dir:
         required: false
         description: "Operating path for path dependent steps"
