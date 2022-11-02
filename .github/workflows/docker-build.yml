@@ -1,0 +1,68 @@
+name: Build docker package
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        required: true
+        description: "Name of docker registry to publish. Does not need ghcr.io/htaic/ in front."
+        type: string
+      yarn_arg:
+        required: true
+        description: "Command to pass yarn for build"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      trigger_release:
+        required: false
+        description: "Toggle to true for docker push all tags"
+        type: boolean
+    secrets:
+      GH_READPAT:
+        required: true
+      GH_USERNAME:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+
+jobs:
+  docker-build:
+    name: Run Docker Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+    steps:
+      - uses: actions/checkout@v3
+
+      # this should come before any docker type commands to ensure access to the ghcr.io repo for custom images and publishing
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }}
+          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Docker Build
+        working-directory: ${{ inputs.working_dir }}
+        run: docker build . -t ghcr.io/htaic/${{ inputs.image_name }}:$(date +%s) -t ghcr.io/htaic/${{ inputs.image_name }}:$GITHUB_REF_NAME -t ghcr.io/htaic/${{ inputs.image_name }}:latest
+
+      - name: Run Tests - ${{ inputs.image_name }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          echo "No additional tests defined"
+
+      - name: Upload Artifact - ${{ inputs.image_name }}
+        if: inputs.trigger_release
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
+        env:
+          CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
+        continue-on-error: false
+
+
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
