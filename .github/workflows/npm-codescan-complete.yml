@@ -95,6 +95,7 @@ jobs:
 
       - name: NPM Audit
         id: audit
+        if: inputs.allow_audit
         working-directory: ${{ inputs.working_dir }}
         run: yarn audit --omit=dev --audit-level high
         env:
