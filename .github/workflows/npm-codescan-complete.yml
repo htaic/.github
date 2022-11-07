@@ -14,6 +14,11 @@ on:
         description: "Enable npm linting"
         type: boolean
         default: true
+      lint_arg:
+        required: false
+        description: "use for report generation"
+        type: string
+        default: lint
       allow_audit:
         required: false
         description: "Enable npm auditing"
@@ -21,7 +26,7 @@ on:
         default: true
       jest_command:
         required: false
-        description: "Command to pass yarn for jest tests"
+        description: "Command to pass yarn for jest tests. Use test --passWithNoTests to bypass"
         type: string
         default: "test"
       playwright:
@@ -39,14 +44,21 @@ on:
         description: "Required to push results to zephyr scale in jira"
         type: string
         default: ""
+      allow_sonar:
+        required: false
+        description: "Enable sonarcloud scanning"
+        type: boolean
+        default: true
     secrets:
       GH_READPAT:
         required: true
       ZEPHYR_PAT:
         required: false
+      SONAR_TOKEN:
+        required: false
         
 jobs:
-  lint:
+  process-scan:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -75,48 +87,7 @@ jobs:
         id: lint
         if: inputs.allow_lint
         working-directory: ${{ inputs.working_dir }}
-        run: yarn lint
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: Update Pull Request
-        uses: actions/github-script@v6.2.0
-        if: github.event_name == 'pull_request'  && always()
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Lint outcome 🧦\`${{ steps.lint.outcome }}\`\n
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
-
-  audit:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['lts/*']
-        # node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    # outputs:
-    #   outcome: ${{ steps.audit.outcome }}
-    steps:
-      - uses: actions/checkout@v3
-        if: inputs.allow_audit
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          registry-url: https://npm.pkg.github.com/
-          scope: '@htaic'
-
-      - name: Install dependencies
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn
+        run: yarn ${{ inputs.lint_arg }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
@@ -124,47 +95,6 @@ jobs:
         id: audit
         working-directory: ${{ inputs.working_dir }}
         run: yarn audit --omit=dev --audit-level high
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: Update Pull Request
-        uses: actions/github-script@v6.3.3
-        if: github.event_name == 'pull_request' && always()
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`\n
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
-
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['lts/*']
-        # node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-    # outputs:
-    #   jest-outcome: ${{ steps.jest-test.outcome }}
-    #   playwright-outcome: ${{ steps.playwright.outcome }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          registry-url: https://npm.pkg.github.com/
-          scope: '@htaic'
-
-      - name: Install dependencies
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
@@ -206,14 +136,40 @@ jobs:
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
 
+      - name: Check for SonarCloud properties
+        if: inputs.allow_sonar
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          if [[ -f ./sonar-project.properties ]]; then
+            echo "sonarcloud properties exists!"
+            exit 0
+          else
+            echo "sonarcloud properties missing!"
+            exit 2 # no such file or directory: https://www.cyberciti.biz/faq/linux-bash-exit-status-set-exit-statusin-bash/
+          fi
+
+      # mono repo configurations see https://community.sonarsource.com/t/monorepo-setup-with-github-actions-dont-work/54494/2
+      - name: SonarCloud Scan
+        id: sonarcloud
+        if: inputs.allow_sonar
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # comes from inherited secrets
+        with:
+          projectBaseDir: ${{ inputs.working_dir }}
+
       - name: Update Pull Request
         uses: actions/github-script@v6.3.3
         if: github.event_name == 'pull_request' && always()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
+            const output = `#### Lint outcome 🧦\`${{ steps.lint.outcome }}\`\n
+            #### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`\n
+            #### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
             #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
+            #### SonarCloud Process ☁️\`${{ steps.sonarcloud.outcome }}\`\n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -221,26 +177,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-
-  # update-pr:
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'pull_request' && always()
-  #   needs: [lint,audit,test]
-  #   steps:
-  #     - name: Update Pull Request
-  #       uses: actions/github-script@v6.3.3
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         script: |
-  #           const output = `#### Lint outcome 🧦\`${{ needs.lint.outputs.outcome }}\`\n
-  #           `#### NPM Audit 🖌️\`${{ needs.audit.outputs.outcome }}\`\n
-  #           `#### Jest Tests 🤡\`${{ needs.tests.outputs.jest-outcome }}\`\n
-  #           `#### Playwrite Tests ▶️\`${{ needs.tests.outputs.playwright-outcome }}\`\n
-  #           *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-  #           github.rest.issues.createComment({
-  #             issue_number: context.issue.number,
-  #             owner: context.repo.owner,
-  #             repo: context.repo.repo,
-  #             body: output
-  #           })
-
