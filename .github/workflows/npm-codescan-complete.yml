@@ -170,7 +170,7 @@ jobs:
           script: |
             const output = `#### Lint outcome 🧦\`${{ steps.lint.outcome }}\`\n
             #### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`\n
-            #### Jest Tests 🤡\`${{ steps.jest-test.outcome }}\`\n
+            #### Jest Tests 🃏\`${{ steps.jest-test.outcome }}\`\n
             #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
             #### SonarCloud Process ☁️\`${{ steps.sonarcloud.outcome }}\`\n
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
