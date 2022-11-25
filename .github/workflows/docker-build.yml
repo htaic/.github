@@ -42,9 +42,14 @@ jobs:
           username: ${{ secrets.GH_USERNAME }}
           password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF_NAME//\//-})"
+        id: extract_branch_name
+      
       - name: Docker Build
         working-directory: ${{ inputs.working_dir }}
-        run: docker build . -t ghcr.io/htaic/${{ inputs.image_name }}:$(date +%s) -t ghcr.io/htaic/${{ inputs.image_name }}:$GITHUB_REF_NAME -t ghcr.io/htaic/${{ inputs.image_name }}:latest
+        run: docker build . -t ghcr.io/htaic/${{ inputs.image_name }}:$(date +%s) -t ghcr.io/htaic/${{ inputs.image_name }}:${{ steps.extract_branch_name.outputs.branch_name }} -t ghcr.io/htaic/${{ inputs.image_name }}:latest
 
       - name: Run Tests - ${{ inputs.image_name }}
         working-directory: ${{ inputs.working_dir }}
