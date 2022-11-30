@@ -24,6 +24,11 @@ on:
         description: "Enable npm auditing"
         type: boolean
         default: true
+      audit_args:
+        required: false
+        description: "arguments for NPM audit"
+        type: string
+        default: --omit=dev --audit-level high
       jest_command:
         required: false
         description: "Command to pass yarn for jest tests. Use test --passWithNoTests to bypass"
@@ -97,7 +102,7 @@ jobs:
         id: audit
         if: inputs.allow_audit
         working-directory: ${{ inputs.working_dir }}
-        run: yarn audit --omit=dev --audit-level high
+        run: yarn audit ${{ inputs.audit_args }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
