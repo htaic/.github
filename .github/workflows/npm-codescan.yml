@@ -50,7 +50,7 @@ jobs:
       - name: NPM Audit
         if: inputs.allow_audit
         working-directory: ${{ inputs.working_dir }}
-        run: yarn audit --omit=dev --audit-level high
+        run: yarn audit --groups "dependencies peerDependencies optionalDependencies" --level high
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
