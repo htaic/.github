@@ -79,7 +79,7 @@ jobs:
         if: inputs.npmtoken_for_docker
         working-directory: ${{ inputs.working_dir }}
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}"$'\n' >> .npmrc
 
       - name: Docker Build
         working-directory: ${{ inputs.working_dir }}
