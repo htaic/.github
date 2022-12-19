@@ -35,7 +35,7 @@ on:
         required: false
         description: "Name of EKS cluster"
         type: string
-        default: simplek8s
+        default: k8s-ht-dev-saas-uw2-1
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
