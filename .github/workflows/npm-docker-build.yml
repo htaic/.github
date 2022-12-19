@@ -91,11 +91,11 @@ jobs:
         run: |
           echo "No additional tests defined"
 
-      # - name: Upload Artifact - ${{ inputs.image_name }}
-      #   if: inputs.trigger_release
-      #   working-directory: ${{ inputs.working_dir }}
-      #   run: |
-      #     docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
-      #   env:
-      #     CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
-      #   continue-on-error: false
+      - name: Upload Artifact - ${{ inputs.image_name }}
+        if: inputs.trigger_release && ${{ secret.CODEFREEZE }} == "false"
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
+        env:
+          CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
+        continue-on-error: false

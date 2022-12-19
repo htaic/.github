@@ -52,12 +52,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      # - name: Configure AWS Credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-access-key-id: ${{ secrets.APPID }}
-      #     aws-secret-access-key: ${{ secrets.APPSECRET }}
-      #     aws-region: ${{ secrets.REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.APPID }}
+          aws-secret-access-key: ${{ secrets.APPSECRET }}
+          aws-region: ${{ secrets.REGION }}
           #this piece isn't working, so I added an sts assume-role command in the next step
           # https://github.com/aws-actions/configure-aws-credentials/issues/465
           
@@ -65,6 +65,7 @@ jobs:
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
       # not authenticated and will result in permission errors.
       - name: Authenticate and run Helm
+        if: ${{ secret.CODEFREEZE }} == "false"
         working-directory: ${{ inputs.working_dir }}
         run: |
           export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
