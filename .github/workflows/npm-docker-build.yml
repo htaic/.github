@@ -1,3 +1,4 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
 name: Build NPM docker package
 
 on:
@@ -90,14 +91,11 @@ jobs:
         run: |
           echo "No additional tests defined"
 
-      - name: Upload Artifact - ${{ inputs.image_name }}
-        if: inputs.trigger_release
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
-        env:
-          CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
-        continue-on-error: false
-
-
-# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+      # - name: Upload Artifact - ${{ inputs.image_name }}
+      #   if: inputs.trigger_release
+      #   working-directory: ${{ inputs.working_dir }}
+      #   run: |
+      #     docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
+      #   env:
+      #     CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
+      #   continue-on-error: false
