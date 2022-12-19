@@ -33,11 +33,14 @@ on:
       GH_MANAGEPACKAGETOKEN:
         required: false
 
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+
 jobs:
   docker-build:
     name: Run NPM build and Docker Build
     runs-on: ubuntu-latest
-    strategy:
+    strategy:   
       matrix:
         node-version: ['lts/*']
         # node-version: [14.x, 16.x, 18.x]
@@ -92,7 +95,7 @@ jobs:
           echo "No additional tests defined"
 
       - name: Upload Artifact - ${{ inputs.image_name }}
-        if: inputs.trigger_release && ${{ secret.CODEFREEZE }} == "false"
+        if: inputs.trigger_release && ${{ env.CODEFREEZE == "false" }}  
         working-directory: ${{ inputs.working_dir }}
         run: |
           docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}

@@ -46,6 +46,9 @@ on:
       REGION:
         required: true
 
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -65,7 +68,7 @@ jobs:
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
       # not authenticated and will result in permission errors.
       - name: Authenticate and run Helm
-        if: ${{ secret.CODEFREEZE }} == "false"
+        if: ${{ env.CODEFREEZE == "false" }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
