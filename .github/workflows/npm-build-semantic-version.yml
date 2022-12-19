@@ -23,6 +23,9 @@ on:
       GH_MANAGEPACKAGETOKEN:
         required: false
 
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+
 jobs:
   build:
     name: Semantic Release
@@ -60,7 +63,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Release
-        if: inputs.trigger_release && ${{ secret.CODEFREEZE }} == "false"
+        if: inputs.trigger_release && ${{ env.CODEFREEZE == "false" }}
         working-directory: ${{ inputs.working_dir }}
         run: npx semantic-release
         env:
