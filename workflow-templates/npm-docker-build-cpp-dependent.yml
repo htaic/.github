@@ -1,0 +1,20 @@
+name: Example - Build docker NPM Package
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker-build:
+    uses: htaic/.github/.github/workflows/npm-docker-build-cpp-dependent.yml@main
+    with:
+      yarn_arg: {{ yarn build argument }}
+      image_name: {{ your image name }}
+      # optional 
+      working_dir: .
+      npmtoken_for_docker: true
+      cpp_dependencies: {{ comma seperated list of release dependencies }}
+      # cpp_dependencies: "${{ needs.cpp-scan-backend-edge-webrtc.package }},${{ needs.cpp-scan-backend-edge-cloud-recording.package }}"
+      trigger_release: ${{ github.ref_name == 'main' }}
+    secrets: inherit

@@ -6,11 +6,15 @@ on:
       - main
 
 jobs:
+  # see htaic/.github/.github/workflows/npm-codescan-complete.yml@main
+  # npm-scan:
+
   npm-build:
     if: github.ref == 'refs/heads/main'
     needs: npm-scan
     uses: htaic/.github/.github/workflows/npm-docker-build.yml@main
     with:
+      image_name: {{ your docker imagename }} 
       yarn_arg: {{ your yarn arg }}
       # optional
       working_dir: .

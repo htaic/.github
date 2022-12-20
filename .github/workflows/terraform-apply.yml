@@ -1,4 +1,4 @@
-name: Terraform init, plan and apply
+name: Terraform init, plan and apply - Will be deprecated
 
 on:
   workflow_call:

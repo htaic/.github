@@ -1,0 +1,188 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Scan C++ package
+
+on:
+  workflow_call:
+    outputs:
+      curl_url:
+        description: "URL to package"
+        value: ${{ jobs.process-scan.outputs.curl_url }}
+      package:
+        description: "URL to package"
+        value: ${{ jobs.process-scan.outputs.package }}
+    inputs:
+      build_arg:
+        required: false
+        description: "Arguments to send to sonarqube build"
+        type: string
+        default: cmake . . && make
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      trigger_release:
+        required: false
+        description: "Trigger release to artifacts"
+        type: boolean
+        default: true
+      artifacts:
+        required: true
+        description: "List of artifacts; space seperated"
+        type: string
+      tag_prefix:
+        required: false
+        description: "prefix to version"
+        type: string
+        default: "v"
+    secrets:
+      GH_READPAT:
+        required: true
+      SONAR_TOKEN:
+        required: true
+        
+jobs:
+  process-scan:
+    runs-on: ubuntu-20.04
+    outputs:
+      curl_url: ${{ steps.curl_url.outputs.curl_url }}
+      package: ${{ steps.curl_url.outputs.package }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Get required binaries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            byacc \
+            cmake \
+            curl \
+            git \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-base-apps \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-tools \
+            gstreamer1.0-libav \
+            gstreamer1.0-x \
+            gstreamer1.0-alsa \
+            gstreamer1.0-gl \
+            gstreamer1.0-gtk3 \
+            gstreamer1.0-pulseaudio \
+            liblog4cplus-dev \
+            pkg-config \
+            v4l-utils \
+            vim \
+            wget \
+            xz-utils \
+            libcurl4-openssl-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libssl-dev \
+            g++ \
+            m4
+          git config --global http.sslVerify false
+
+      - name: Install sonar-scanner and build-wrapper
+        uses: SonarSource/sonarcloud-github-c-cpp@v1
+
+      - name: Run build-wrapper
+        id: wrapper
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          build-wrapper-linux-x86-64 --out-dir . ${{ inputs.build_arg }}
+
+      # TODO output wrapper causes the tar to have a folder called . in it instead of a folder
+      - name: Run sonar-scanner
+        working-directory: ${{ inputs.working_dir }}
+        id: sonarcloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner --define sonar.cfamily.build-wrapper-output="."
+
+      - name: Generate tar
+        if: ${{ inputs.trigger_release }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          tar -cf ${{ inputs.working_dir }}.tar ${{ inputs.artifacts }}
+
+      - name: Semantic Version - generate
+        if: ${{ inputs.trigger_release }}
+        id: version
+        uses: paulhatch/semantic-version@v4.0.2
+        with:
+          tag_prefix: ${{ inputs.tag_prefix }}
+          change_path: ${{ inputs.working_dir }}
+          search_commit_body: true
+          format: "${major}.${minor}.${patch}-${increment}"
+
+      - name: Push release
+        if: ${{ inputs.trigger_release }}
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: ${{ github.token }}
+          automatic_release_tag: ${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}
+          prerelease: false
+          title: ${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}
+          files: ${{ inputs.working_dir }}/${{ inputs.working_dir }}.tar
+
+      - name: Set release package url
+        working-directory: ${{ inputs.working_dir }}
+        id: curl_url
+        run: |
+            echo "curl_url=${{ github.server_url }}/${{ github.repository }}/releases/download/${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}/${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}/${{ inputs.working_dir }}.tar" >> $GITHUB_OUTPUT
+            echo "package=${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+
+# TODO maybe gh cli will allow the source delete https://cli.github.com/manual/gh_release_delete-asset
+# this doesn't seem to work...
+      # - name: Delete source assets from release
+      #   if: ${{ inputs.trigger_release }}
+      #   uses: mknejp/delete-release-assets@v1
+      #   with:
+      #     token: ${{ github.token }}
+      #     tag: ${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}
+      #     assets: "*.zip"
+
+# this is legacy and not maintained
+      # - name: Generate release
+      #   uses: actions/create-release@v1
+      #   id: create_release
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #   with:
+      #     draft: false
+      #     prerelease: false
+      #     release_name: ${{ steps.version.outputs.version }}
+      #     tag_name: ${{ inputs.working_dir }}/${{ steps.version.outputs.version_tag }}
+      #     body_path: ${{ steps.version.outputs.authors }}
+
+      # - name: Upload release artifact
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ${{ inputs.working_dir }}/${{ inputs.artifact_name }}-${{ github.ref_name }}.tar
+      #     asset_name: ${{ inputs.artifact_name }}-${{ github.ref_name }}
+      #     asset_content_type: application/gzip
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6.3.3
+        if: github.event_name == 'pull_request' && always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Build wrapper outcome 🔨\`${{ steps.wrapper.outcome }}\`\n
+            #### SonarCloud Process ☁️\`${{ steps.sonarcloud.outcome }}\`\n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

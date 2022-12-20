@@ -2,25 +2,15 @@ name: Example - Deploy Docker NPM Package
 
 on:
   push:
-  pull_request:
     branches:
       - main
-      - release
-      - production
 
 jobs:
-  docker-build:
-    if: github.ref == 'refs/heads/main'
-    needs: npm-scan
-    uses: htaic/.github/.github/workflows/npm-docker-build.yml@main
-    with:
-      yarn_arg: {{ your yarn arg }}
-      image_name: {{ your docker image name }}
-      # optional 
-      working_dir: .
-      npmtoken_for_docker: false
-      trigger_release: false
-    secrets: inherit
+  # see htaic/.github/.github/workflows/npm-codescan-complete.yml@main
+  # npm-scan:
+
+  # see htaic/.github/.github/workflows/npm-docker-build.yml@main
+  # docker-build:
 
   dev-k8s-deploy:
     needs: docker-build
@@ -31,5 +21,7 @@ jobs:
       # optional 
       working_dir: .
       helm_values: {{ values.yaml to pass helm }}
+      helm_source: "https://htaic.github.io/helm-charts"
+      helm_chart: "htaic/microfrontend"
       cluster_name: {{ your aws cluster }}
     secrets: inherit
