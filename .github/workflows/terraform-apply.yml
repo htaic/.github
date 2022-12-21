@@ -32,7 +32,9 @@ on:
       APPSECRET:
         required: true     
       REGION:
-        required: true     
+        required: true  
+      CODEFREEZE:
+        required: true   
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
@@ -146,7 +148,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        if: github.ref == 'refs/heads/main' && ${{ env.CODEFREEZE == "false" }} && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        if: github.ref_name == 'main' && ${{ env.CODEFREEZE == "false" }} && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
         run: terraform apply tfplan
         env:
@@ -157,7 +159,7 @@ jobs:
         continue-on-error: true
 
       - name: Save State File
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref_name == 'main' && github.event_name == 'push'
         working-directory: ./terraform.tfstate.d
         run: |
           git config user.name "GitHub Actions Bot" && \

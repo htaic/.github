@@ -45,6 +45,8 @@ on:
         required: true
       REGION:
         required: true
+      CODEFREEZE:
+        required: true
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}

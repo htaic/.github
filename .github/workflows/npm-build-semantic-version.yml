@@ -22,6 +22,8 @@ on:
         required: true
       GH_MANAGEPACKAGETOKEN:
         required: false
+      CODEFREEZE:
+        required: true
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
