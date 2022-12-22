@@ -3,8 +3,7 @@
     "description": "Docker image of NPM package",
     "iconName": "K8S",
     "categories": [
-        "Dockerfile",
-        "NPM Config"
+        "Dockerfile"
     ],
     "filePatterns": [
     ]

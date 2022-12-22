@@ -1,0 +1,10 @@
+{
+    "name": "Build/Scan C/C++ Library",
+    "description": "Code scanning and build for C/C++ Library",
+    "iconName": "cpp",
+    "categories": [
+        "C"
+    ],
+    "filePatterns": [
+    ]
+}

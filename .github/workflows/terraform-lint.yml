@@ -12,7 +12,7 @@ on:
         required: false
         description: "Commit message for linted code"
         type: string
-        default: "chore: Linting from github actions"
+        default: "chore: Linting terraform from github actions"
 
 jobs:
   linting:

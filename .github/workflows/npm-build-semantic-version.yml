@@ -22,6 +22,11 @@ on:
         required: true
       GH_MANAGEPACKAGETOKEN:
         required: false
+      CODEFREEZE:
+        required: true
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
 
 jobs:
   build:
@@ -59,10 +64,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      # - name: Release
-      #   if: inputs.trigger_release
-      #   working-directory: ${{ inputs.working_dir }}
-      #   run: npx semantic-release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+      - name: Release
+        if: inputs.trigger_release && ${{ env.CODEFREEZE == 'false' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}

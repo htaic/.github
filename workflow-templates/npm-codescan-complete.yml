@@ -10,9 +10,12 @@ jobs:
       # optional
       working_dir: .
       allow_lint: true
+      lint_arg: "lint"
       allow_audit: true
+      audit_args: "--omit=dev --audit-level high"
       jest_command: "test"
       playwright: false
       playwright_command: "playwright"
       jira_project_key: ""
+      allow_sonar: true
     secrets: inherit

@@ -1,5 +1,4 @@
-# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
-name: Build NPM docker package
+name: Build docker package with C++ dependencies
 
 on:
   workflow_call:
@@ -25,6 +24,10 @@ on:
         required: false
         description: "Toggle to true for docker push all tags"
         type: boolean
+      cpp_dependencies:
+        required: false
+        description: "Files to include"
+        type: string
     secrets:
       GH_READPAT:
         required: true
@@ -32,24 +35,34 @@ on:
         required: true
       GH_MANAGEPACKAGETOKEN:
         required: false
-      CODEFREEZE:
-        required: true
-
-env:
-  CODEFREEZE: ${{ secrets.CODEFREEZE }}
 
 jobs:
   docker-build:
-    name: Run NPM build and Docker Build
+    name: Run Docker Build
     runs-on: ubuntu-latest
-    strategy:   
-      matrix:
-        node-version: ['lts/*']
-        # node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
       - uses: actions/checkout@v3
 
+      - name: Get Dependendies
+        working-directory: ${{ inputs.working_dir }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          IFS=',' read -ra array <<< "${{ inputs.cpp_dependencies }}"
+          for i in "${array[@]}"
+          do
+            echo "RUNNING: gh release download "$i" --pattern '*.tar'"
+            gh release download "$i" --pattern '*.tar'
+            mkdir "$i"
+          done
+
+      - name: Unpack Dependendies
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          ls *.tar | xargs -I % sh -c 'mkdir $(echo % | sed 's/.tar/-opt/')'
+          ls *.tar | xargs -I % sh -c 'tar -xf % -C $(echo % | sed 's/.tar/-opt/')'
+          ls -laR
+ 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -85,8 +98,8 @@ jobs:
         if: inputs.npmtoken_for_docker
         working-directory: ${{ inputs.working_dir }}
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}"$'\n' >> .npmrc
-
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
+    
       - name: Docker Build
         working-directory: ${{ inputs.working_dir }}
         run: docker build . -t ghcr.io/htaic/${{ inputs.image_name }}:$(date +%s) -t ghcr.io/htaic/${{ inputs.image_name }}:$GITHUB_REF_NAME -t ghcr.io/htaic/${{ inputs.image_name }}:latest
@@ -97,10 +110,13 @@ jobs:
           echo "No additional tests defined"
 
       - name: Upload Artifact - ${{ inputs.image_name }}
-        if: inputs.trigger_release && ${{ env.CODEFREEZE == 'false' }}  
+        if: inputs.trigger_release && ${{ github.ref_name == 'main' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           docker push --all-tags ghcr.io/htaic/${{ inputs.image_name }}
         env:
           CR_PAT: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
         continue-on-error: false
+
+
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow

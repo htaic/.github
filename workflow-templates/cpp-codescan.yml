@@ -1,0 +1,18 @@
+name: Example - Deploy Docker NPM Package
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  cpp-scan:
+    uses: htaic/.github/.github/workflows/cpp-codescan.yml@main
+    with:
+      artifacts: "./*.so ./*.a" 
+      # optional 
+      build_arg: cmake . . && make
+      working_dir: video-edge-webrtc-service
+      trigger_release: true
+      tag_prefix: "v"
+    secrets: inherit
