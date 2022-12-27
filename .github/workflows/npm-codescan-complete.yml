@@ -84,7 +84,17 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@htaic'
 
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-node-${{ inputs.node_version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ inputs.node_version }}-${{ hashFiles('**/package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: ${{ inputs.working_dir }}
         run: yarn
         env:
