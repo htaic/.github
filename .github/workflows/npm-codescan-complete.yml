@@ -9,6 +9,11 @@ on:
         description: "Operating path for path dependent steps"
         type: string
         default: .
+      node_versions:
+        required: false
+        description: "List of node version which want to scan"
+        type: string
+        default: "['lts/*']"
       allow_lint:
         required: false
         description: "Enable npm linting"
@@ -67,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['lts/*']
+        node-version: ${{ fromJSON(inputs.node_versions) }}
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     # outputs:
@@ -89,9 +94,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-node-${{ inputs.node_version }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-${{ inputs.node_version }}-${{ hashFiles('**/package-lock.json') }}
+            ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
