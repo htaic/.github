@@ -59,6 +59,11 @@ on:
         description: "Enable sonarcloud scanning"
         type: boolean
         default: true
+      cache_dependencies:
+        required: false
+        description: "Enable npm cache"
+        type: boolean
+        default: false
     secrets:
       GH_READPAT:
         required: true
@@ -90,6 +95,7 @@ jobs:
           scope: '@htaic'
 
       - name: Cache dependencies
+        if: ${{ inputs.cache_dependencies }}
         id: cache
         uses: actions/cache@v3
         with:
@@ -99,7 +105,7 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: ${{ inputs.cache_dependencies }} && steps.cache.outputs.cache-hit != 'true'
         working-directory: ${{ inputs.working_dir }}
         run: yarn
         env:
