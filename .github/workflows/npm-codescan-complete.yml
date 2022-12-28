@@ -105,7 +105,7 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
-        if: ${{ inputs.cache_dependencies }} && steps.cache.outputs.cache-hit != 'true'
+        if: ${{ !inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true' }}
         working-directory: ${{ inputs.working_dir }}
         run: yarn
         env:
