@@ -9,6 +9,11 @@ on:
         description: "Operating path for path dependent steps"
         type: string
         default: .
+      node_versions:
+        required: false
+        description: "List of node version which want to scan"
+        type: string
+        default: "['lts/*']"
       allow_lint:
         required: false
         description: "Enable npm linting"
@@ -54,6 +59,11 @@ on:
         description: "Enable sonarcloud scanning"
         type: boolean
         default: true
+      cache_dependencies:
+        required: false
+        description: "Enable npm cache"
+        type: boolean
+        default: false
     secrets:
       GH_READPAT:
         required: true
@@ -67,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['lts/*']
+        node-version: ${{ fromJSON(inputs.node_versions) }}
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     # outputs:
@@ -84,7 +94,18 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@htaic'
 
+      - name: Cache dependencies
+        if: ${{ inputs.cache_dependencies }}
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+
       - name: Install dependencies
+        if: ${{ !inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true' }}
         working-directory: ${{ inputs.working_dir }}
         run: yarn
         env:
