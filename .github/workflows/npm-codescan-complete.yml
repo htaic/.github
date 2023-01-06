@@ -4,6 +4,11 @@ name: Scan NPM package
 on:
   workflow_call:
     inputs:
+      package_manager:
+        required: false
+        description: "Select package manager between yarn and npm"
+        type: string
+        default: yarn
       working_dir:
         required: false
         description: "Operating path for path dependent steps"
@@ -71,7 +76,7 @@ on:
         required: false
       SONAR_TOKEN:
         required: false
-        
+
 jobs:
   process-scan:
     runs-on: ubuntu-latest
@@ -92,45 +97,77 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: https://npm.pkg.github.com/
-          scope: '@htaic'
+          scope: "@htaic"
 
       - name: Cache dependencies
         if: ${{ inputs.cache_dependencies }}
         id: cache
         uses: actions/cache@v3
         with:
-          path: '**/node_modules'
+          path: "**/node_modules"
           key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
 
-      - name: Install dependencies
-        if: ${{ !inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true' }}
+      - name: Install Yarn dependencies
+        if: ${{ (!inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true') && inputs.package_manager == 'yarn' }}
         working-directory: ${{ inputs.working_dir }}
         run: yarn
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM linting
-        id: lint
-        if: inputs.allow_lint
+      - name: Install NPM dependencies
+        if: ${{ (!inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true') && inputs.package_manager == 'npm' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Yarn linting
+        id: yarn-lint
+        if: inputs.allow_lint && inputs.package_manager == 'yarn'
         working-directory: ${{ inputs.working_dir }}
         run: yarn ${{ inputs.lint_arg }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM Audit
-        id: audit
-        if: inputs.allow_audit
+      - name: NPM linting
+        id: npm-lint
+        if: inputs.allow_lint && inputs.package_manager == 'npm'
+        working-directory: ${{ inputs.working_dir }}
+        run: npm run lint
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Yarn Audit
+        id: yarn-audit
+        if: inputs.allow_audit && inputs.package_manager == 'yarn'
         working-directory: ${{ inputs.working_dir }}
         run: yarn audit ${{ inputs.audit_args }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Run Jest
-        id: jest-test
+      - name: NPM Audit
+        id: npm-audit
+        if: inputs.allow_audit && inputs.package_manager == 'npm'
+        working-directory: ${{ inputs.working_dir }}
+        run: npm audit --omit=dev --audit-level high
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Yarn Run Jest
+        id: yarn-jest-test
+        if: inputs.package_manager == 'yarn'
         working-directory: ${{ inputs.working_dir }}
         run: yarn ${{ inputs.jest_command }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Run Jest
+        id: npm-jest-test
+        if: inputs.package_manager == 'npm'
+        working-directory: ${{ inputs.working_dir }}
+        run: npm run ${{ inputs.jest_command }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
@@ -155,7 +192,7 @@ jobs:
           --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
           --form 'file=@"./junit.xml"'
         continue-on-error: true
-    
+
       - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
         if: inputs.playwright && inputs.jira_project_key != null
         working-directory: ${{ inputs.working_dir }}
@@ -165,6 +202,7 @@ jobs:
           --form 'file=@"./playwright-results.xml"'
         continue-on-error: true
 
+      #If you use this, Disable automatic analysis from your SonarCloud proejct
       - name: Check for SonarCloud properties
         if: inputs.allow_sonar
         working-directory: ${{ inputs.working_dir }}
@@ -183,7 +221,7 @@ jobs:
         if: inputs.allow_sonar
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # comes from inherited secrets
         with:
           projectBaseDir: ${{ inputs.working_dir }}
