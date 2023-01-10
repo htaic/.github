@@ -39,6 +39,11 @@ on:
         description: "arguments for NPM audit"
         type: string
         default: --omit=dev --audit-level high
+      audit_jest:
+        required: false
+        description: "Enable Jest"
+        type: string
+        default: false
       jest_command:
         required: false
         description: "Command to pass yarn for jest tests. Use test --passWithNoTests to bypass"
@@ -109,65 +114,45 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
 
-      - name: Install Yarn dependencies
-        if: ${{ (!inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true') && inputs.package_manager == 'yarn' }}
+      - name: Install dependencies
+        if: ${{ !inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true' }}
         working-directory: ${{ inputs.working_dir }}
-        run: yarn
+        run: |
+          alias npm="npm ci"
+          ${{ inputs.package_manager }}
+          unalias npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Install NPM dependencies
         if: ${{ (!inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true') && inputs.package_manager == 'npm' }}
         working-directory: ${{ inputs.working_dir }}
-        run: npm ci
+        run: |
+
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Yarn linting
-        id: yarn-lint
-        if: inputs.allow_lint && inputs.package_manager == 'yarn'
+      - name: Linting
+        id: lint
+        if: inputs.allow_lint
         working-directory: ${{ inputs.working_dir }}
-        run: yarn ${{ inputs.lint_arg }}
+        run: ${{ inputs.package_manager }} run ${{ inputs.lint_arg }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: NPM linting
-        id: npm-lint
-        if: inputs.allow_lint && inputs.package_manager == 'npm'
+      - name: Audit
+        id: audit
+        if: inputs.allow_audit
         working-directory: ${{ inputs.working_dir }}
-        run: npm run lint
+        run: ${{ inputs.package_manager }} ${{ inputs.audit_args }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Yarn Audit
-        id: yarn-audit
-        if: inputs.allow_audit && inputs.package_manager == 'yarn'
-        working-directory: ${{ inputs.working_dir }}
-        run: yarn audit ${{ inputs.audit_args }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: NPM Audit
-        id: npm-audit
-        if: inputs.allow_audit && inputs.package_manager == 'npm'
-        working-directory: ${{ inputs.working_dir }}
-        run: npm audit --omit=dev --audit-level high
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: Yarn Run Jest
+      - name: Run Jest
         id: yarn-jest-test
-        if: inputs.package_manager == 'yarn'
+        if: inputs.allow_jest
         working-directory: ${{ inputs.working_dir }}
-        run: yarn ${{ inputs.jest_command }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
-
-      - name: NPM Run Jest
-        id: npm-jest-test
-        if: inputs.package_manager == 'npm'
-        working-directory: ${{ inputs.working_dir }}
-        run: npm run ${{ inputs.jest_command }}
+        run: ${{ inputs.package_manager }} run ${{ inputs.jest_command }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
