@@ -145,7 +145,7 @@ jobs:
         id: audit
         if: inputs.allow_audit
         working-directory: ${{ inputs.working_dir }}
-        run: ${{ inputs.package_manager }} ${{ inputs.audit_args }}
+        run: ${{ inputs.package_manager }} audit ${{ inputs.audit_args }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
