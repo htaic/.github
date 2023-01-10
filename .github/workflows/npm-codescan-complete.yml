@@ -42,7 +42,7 @@ on:
       allow_jest:
         required: false
         description: "Enable Jest"
-        type: string
+        type: boolean
         default: false
       jest_command:
         required: false
