@@ -118,6 +118,7 @@ jobs:
         if: ${{ !inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
+          shopt -s expand_aliases
           alias npm="npm ci"
           ${{ inputs.package_manager }}
           unalias npm
