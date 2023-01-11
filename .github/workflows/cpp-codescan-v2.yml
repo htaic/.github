@@ -130,6 +130,39 @@ jobs:
             --define sonar.host.url="https://sonarcloud.io" \
             --define sonar.cfamily.build-wrapper-output="build/${{ env.BUILD_WRAPPER_OUT_DIR }}"
 
+      - name: Generate tar
+        if: ${{ inputs.trigger_release }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          tar -cf ${{ inputs.working_dir }}.tar ${{ inputs.artifacts }}
+
+      - name: Semantic Version - generate
+        if: ${{ inputs.trigger_release }}
+        id: version
+        uses: paulhatch/semantic-version@v4.0.2
+        with:
+          tag_prefix: ${{ inputs.tag_prefix }}
+          change_path: ${{ inputs.working_dir }}
+          search_commit_body: true
+          format: "${major}.${minor}.${patch}-${increment}"
+
+      - name: Push release
+        if: ${{ inputs.trigger_release }}
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: ${{ github.token }}
+          automatic_release_tag: ${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}
+          prerelease: false
+          title: ${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}
+          files: ${{ inputs.working_dir }}/${{ inputs.working_dir }}.tar
+
+      - name: Set release package url
+        working-directory: ${{ inputs.working_dir }}
+        id: curl_url
+        run: |
+          echo "curl_url=${{ github.server_url }}/${{ github.repository }}/releases/download/${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}/${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}/${{ inputs.working_dir }}.tar" >> $GITHUB_OUTPUT
+          echo "package=${{ inputs.working_dir }}-${{ steps.version.outputs.version_tag }}" >> $GITHUB_OUTPUT
+
       - name: Update Pull Request
         uses: actions/github-script@v6.3.3
         if: github.event_name == 'pull_request' && always()
