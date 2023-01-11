@@ -1,0 +1,147 @@
+name: Scan C++ package
+
+on:
+  workflow_call:
+    outputs:
+      curl_url:
+        description: "URL to package"
+        value: ${{ jobs.process-scan.outputs.curl_url }}
+      package:
+        description: "URL to package"
+        value: ${{ jobs.process-scan.outputs.package }}
+    inputs:
+      build_arg:
+        required: false
+        description: "Arguments to send to sonarqube build"
+        type: string
+        default: make clean all
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      trigger_release:
+        required: false
+        description: "Trigger release to artifacts"
+        type: boolean
+        default: true
+      artifacts:
+        required: true
+        description: "List of artifacts; space seperated"
+        type: string
+      tag_prefix:
+        required: false
+        description: "prefix to version"
+        type: string
+        default: "v"
+    secrets:
+      GH_READPAT:
+        required: true
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+  process-scan:
+    runs-on: ubuntu-latest
+    outputs:
+      curl_url: ${{ steps.curl_url.outputs.curl_url }}
+      package: ${{ steps.curl_url.outputs.package }}
+    env:
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      # - name: Set up JDK 11
+      #   uses: actions/setup-java@v1
+      #   with:
+      #     java-version: 11
+
+      - name: Get required binaries
+        run: |
+          sudo apt-get update
+          sudo apt install -y libunwind-dev
+          sudo apt-get install -y \
+            build-essential \
+            byacc \
+            cmake \
+            curl \
+            git \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-base-apps \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-tools \
+            gstreamer1.0-libav \
+            gstreamer1.0-x \
+            gstreamer1.0-alsa \
+            gstreamer1.0-gl \
+            gstreamer1.0-gtk3 \
+            gstreamer1.0-pulseaudio \
+            liblog4cplus-dev \
+            libpq-dev \
+            pkg-config \
+            postgresql \
+            postgresql-contrib \
+            v4l-utils \
+            vim \
+            wget \
+            xz-utils \
+            libcurl4-openssl-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libssl-dev \
+            g++ \
+            m4
+
+          git config --global http.sslVerify false
+          git fetch --all
+
+          sudo apt install lsb-release -y
+          curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+          sudo apt-get install redis -y
+
+      - name: Install sonar-scanner and build-wrapper
+        uses: SonarSource/sonarcloud-github-c-cpp@v1
+
+      - name: Run build-wrapper
+        id: wrapper
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          echo "Run build-wrapper"
+          mkdir build
+          cd build
+          cmake ..
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} ${{ inputs.build_arg }}
+
+      # TODO output wrapper causes the tar to have a folder called . in it instead of a folder
+      - name: Run sonar-scanner
+        id: sonarcloud
+        working-directory: ${{ inputs.working_dir }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner \
+            --define sonar.host.url="https://sonarcloud.io" \
+            --define sonar.cfamily.build-wrapper-output="build/${{ env.BUILD_WRAPPER_OUT_DIR }}"
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6.3.3
+        if: github.event_name == 'pull_request' && always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Build wrapper outcome 🔨\`${{ steps.wrapper.outcome }}\`\n
+            #### SonarCloud Process ☁️\`${{ steps.sonarcloud.outcome }}\`\n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
