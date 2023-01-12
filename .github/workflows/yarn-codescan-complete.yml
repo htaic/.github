@@ -33,7 +33,7 @@ on:
         required: false
         description: "arguments for NPM audit"
         type: string
-        default: --omit=dev --audit-level high
+        default: --groups dependencies --level high
       jest_command:
         required: false
         description: "Command to pass yarn for jest tests. Use test --passWithNoTests to bypass"
