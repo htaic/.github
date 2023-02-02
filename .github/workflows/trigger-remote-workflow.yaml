@@ -1,0 +1,37 @@
+
+name: Get latest release version
+
+on:
+  workflow_call:
+    inputs:
+      owner:
+        required: true
+        type: string
+      repo:
+        required: true
+        type: string
+      workflow_id:
+        required: true
+        type: string
+      branch-ref:
+        required: false
+        type: string
+        default: main
+    secrets:
+      GH_MANAGEPACKAGETOKEN:
+        required: true
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+        script: |
+          await github.rest.actions.createWorkflowDispatch({
+          owner: ${{ inputs.owner }}
+          repo: '${{ inputs.repo }}',
+          workflow_id: '${{ inputs.workflow_id }}',
+          ref: '${{ inputs.branch-ref }}'
+          })
