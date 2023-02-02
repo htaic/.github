@@ -1,4 +1,3 @@
-
 name: Trigger Remote Workflow
 
 on:
@@ -22,7 +21,7 @@ on:
         required: true
 
 jobs:
-  get-version:
+  trigger-workflow:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/github-script@v6
@@ -30,7 +29,7 @@ jobs:
         github-token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
         script: |
           await github.rest.actions.createWorkflowDispatch({
-          owner: ${{ inputs.owner }},
+          owner: '${{ inputs.owner }}',
           repo: '${{ inputs.repo }}',
           workflow_id: '${{ inputs.workflow_id }}',
           ref: '${{ inputs.branch-ref }}'
