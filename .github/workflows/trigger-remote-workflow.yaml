@@ -30,7 +30,7 @@ jobs:
         github-token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
         script: |
           await github.rest.actions.createWorkflowDispatch({
-          owner: ${{ inputs.owner }}
+          owner: ${{ inputs.owner }},
           repo: '${{ inputs.repo }}',
           workflow_id: '${{ inputs.workflow_id }}',
           ref: '${{ inputs.branch-ref }}'
