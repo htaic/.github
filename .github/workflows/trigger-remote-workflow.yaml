@@ -1,5 +1,5 @@
 
-name: Get latest release version
+name: Trigger Remote Workflow
 
 on:
   workflow_call:
