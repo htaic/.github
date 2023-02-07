@@ -38,7 +38,7 @@ on:
         required: false
         description: "arguments for NPM audit"
         type: string
-        default: --omit=dev --audit-level high
+        default: --groups dependencies --level high
       allow_jest:
         required: false
         description: "Enable Jest"
