@@ -95,3 +95,10 @@ jobs:
           VALUES_FILE: ${{ inputs.helm_values }}
           HELM_SOURCE: ${{ inputs.helm_source }}
           HELM_CHART: ${{ inputs.helm_chart }}
+  service-api-tests:
+    needs: release
+    uses: htaic/.github/workflows/api-tests-service.yml@main
+    with: 
+      # TODO update environment name when there are more clusters
+      environment_name: "dev"
+      service_name: ${{ inputs.service_name }}

@@ -1,0 +1,33 @@
+name: Service API Tests
+
+on:
+  workflow_call:
+    inputs:
+      environment_name:
+        required: true
+        description: "Name of the environment that the tests will run against"
+        type: string 
+        default: "dev"   
+      service_name:
+        required: true
+        description: "Name of the service to run tests"
+        type: string
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    env:
+      TEST_ENV: ${{ inputs.environment_name }}
+      TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+      TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install yarn
+        run: npm install -g yarn
+
+      - name: Install Dependencies
+        run: yarn --cwd ${{ inputs.service_name }}/ install
+
+      - name: Run API tests
+        run: yarn --cwd ${{ inputs.service_name }}/ test:api
