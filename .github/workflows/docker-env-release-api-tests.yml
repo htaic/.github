@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -65,7 +65,7 @@ jobs:
           aws-region: ${{ secrets.REGION }}
           #this piece isn't working, so I added an sts assume-role command in the next step
           # https://github.com/aws-actions/configure-aws-credentials/issues/465
-          
+
       #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
       # not authenticated and will result in permission errors.
@@ -101,4 +101,4 @@ jobs:
     with: 
       # TODO update environment name when there are more clusters
       environment_name: "dev"
-      service_name: ${{ inputs.working_dir }}
+      working_dir: ${{ inputs.working_dir }}
