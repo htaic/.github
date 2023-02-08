@@ -102,3 +102,4 @@ jobs:
       # TODO update environment name when there are more clusters
       environment_name: "dev"
       service_name: ${{ inputs.working_dir }}
+      working_dir: ${{ inputs.working_dir }}
