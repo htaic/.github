@@ -1,0 +1,111 @@
+name: Release docker package
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        description: "Name of helm controlled service to release"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      helm_values:
+        required: false
+        description: "Path of local helm values.yaml file"
+        type: string
+      helm_source:
+        required: false
+        description: "Helm URL to register packages"
+        type: string
+        default: https://htaic.github.io/helm-charts
+      helm_chart:
+        required: false
+        description: "Name of helm package"
+        type: string
+        default: htaic/microfrontend
+      helm_chart_version:
+        required: false
+        description: "Version constraint for the chart version to use (e.g. 1.1.1 or ^2.0.0)"
+        type: string
+      cluster_name:
+        required: false
+        description: "Name of EKS cluster"
+        type: string
+        default: k8s-ht-dev-saas-uw2-1
+      environment:
+        required: false
+        description: "Approval Environment"
+        type: string
+        default: dev
+      additional_args:
+        required: false
+        description: "Apply additional aguments; By default --atomic is used"
+        type: string
+        default: " --atomic "
+    secrets:
+      GH_MANAGEPACKAGETOKEN:
+        required: true
+      APPID:
+        required: true
+      APPSECRET:
+        required: true
+      REGION:
+        required: true
+        description: "example: us-west-2"
+      ASSUME_ROLE:
+        required: true
+        description: "example: arn:aws:iam::{{accountID}}:role/AWSControlTowerExecution"
+      CODEFREEZE:
+        required: true
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.APPID }}
+          aws-secret-access-key: ${{ secrets.APPSECRET }}
+          aws-region: ${{ secrets.REGION }}
+          #this piece isn't working, so I added an sts assume-role command in the next step
+          # https://github.com/aws-actions/configure-aws-credentials/issues/465
+
+      #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
+      # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
+      # not authenticated and will result in permission errors.
+      - name: Authenticate and run Helm
+        if: ${{ env.CODEFREEZE == 'false' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+          $(aws sts assume-role \
+          --role-arn $ASSUME_ROLE \
+          --role-session-name GitHubPipeline \
+          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+          --output text))
+          aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
+          helm repo add htaic $HELM_SOURCE && helm repo update
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha $(if [ -z "$VALUES_FILE" ]; then echo ""; else echo "-f $VALUES_FILE"; fi) $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          kubectl get all --all-namespaces
+        env:
+          ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}
+          AWS_REGION: ${{ secrets.REGION }}
+          K8S_NAME: ${{ inputs.cluster_name }}
+          SERVICE_NAME: ${{ inputs.service_name }}
+          VALUES_FILE: ${{ inputs.helm_values }}
+          HELM_SOURCE: ${{ inputs.helm_source }}
+          HELM_CHART: ${{ inputs.helm_chart }}
+          HELM_CHART_VERSION: ${{ inputs.helm_chart_version }}
