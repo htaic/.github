@@ -8,9 +8,9 @@ on:
         description: "Name of the environment that the tests will run against"
         type: string 
         default: "dev"   
-      service_name:
+      working_dir:
         required: true
-        description: "Name of the service to run tests"
+        description: "working directory"
         type: string
 jobs:
   api-tests:
@@ -27,7 +27,7 @@ jobs:
         run: npm install -g yarn
 
       - name: Install Dependencies
-        run: yarn --cwd ${{ inputs.service_name }}/ install
+        run: yarn --cwd ${{ inputs.working_dir }}/ install
 
       - name: Run API tests
-        run: yarn --cwd ${{ inputs.service_name }}/ test:api
+        run: yarn --cwd ${{ inputs.working_dir }}/ test:api
