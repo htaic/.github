@@ -36,6 +36,11 @@ on:
         description: "Name of EKS cluster"
         type: string
         default: k8s-ht-dev-saas-uw2-1
+      run_api_tests:
+        required: false
+        description: "Boolean flag to run the api tests"
+        type: boolean
+        default: false
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -97,6 +102,7 @@ jobs:
           HELM_CHART: ${{ inputs.helm_chart }}
   service-api-tests:
     needs: release
+    if: ${{ inputs.run_api_tests }}
     uses: htaic/.github/.github/workflows/api-tests-service.yml@main
     with: 
       # TODO update environment name when there are more clusters
