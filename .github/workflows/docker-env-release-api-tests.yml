@@ -102,7 +102,7 @@ jobs:
           HELM_CHART: ${{ inputs.helm_chart }}
   service-api-tests:
     needs: release
-    if: ${{ inputs.run_api_tests == 'true' }}
+    if: ${{ inputs.run_api_tests }}
     uses: htaic/.github/.github/workflows/api-tests-service.yml@main
     with: 
       # TODO update environment name when there are more clusters
