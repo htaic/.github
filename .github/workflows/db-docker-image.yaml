@@ -17,6 +17,11 @@ on:
         description: "version tag to use"
         type: string
         default: v1.0.0
+      tags:
+        required: false
+        description: "all tags to use"
+        type: string
+        default: ""
       trigger_release:
         required: false
         description: "Toggle to true for docker push all tags"
@@ -74,6 +79,16 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v3
+        if: ${{ inputs.tags != '' }}
+        with:
+          tags: ${{ inputs.tags }}
+          context: ${{ inputs.working_dir }}
+          push: ${{ inputs.trigger_release }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        if: ${{ inputs.tags == '' }}
         with:
           tags: ${{ steps.meta.outputs.tags }}
           context: ${{ inputs.working_dir }}
