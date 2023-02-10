@@ -77,7 +77,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push - input tag
         uses: docker/build-push-action@v3
         if: ${{ inputs.tags != '' }}
         with:
@@ -86,7 +86,7 @@ jobs:
           push: ${{ inputs.trigger_release }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Build and push
+      - name: Build and push - generate tag
         uses: docker/build-push-action@v3
         if: ${{ inputs.tags == '' }}
         with:

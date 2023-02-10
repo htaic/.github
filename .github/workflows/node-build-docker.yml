@@ -3,6 +3,13 @@ name: Build node docker package
 
 on:
   workflow_call:
+    outputs:
+      version_number:
+        description: "Version number from semver"
+        value: ${{ jobs.node-build.outputs.version_number }}
+      tags:
+        description: "All image tags"
+        value: ${{ jobs.node-build.outputs.tags }}
     inputs:
       image_name:
         required: true
@@ -55,6 +62,9 @@ env:
 
 jobs:
   node-build:
+    outputs:
+      version_number: ${{ steps.sem-ver.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
     name: Run Node Build
     runs-on: ubuntu-latest
     strategy:
@@ -131,6 +141,7 @@ jobs:
           tags: |
             type=sha
             type=raw,latest
+            type=raw,${{ matrix.node-version }}
             type=ref,event=branch
             type=schedule,pattern={{date 'YYYYMMDD'}}
             type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
