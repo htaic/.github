@@ -48,11 +48,10 @@ jobs:
         with:
           images: ghcr.io/htaic/${{ inputs.image_name }}
           tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
             type=sha
             type=raw,latest
+            type=ref,event=branch
+            type=schedule,pattern={{date 'YYYYMMDD'}}
             type=semver,pattern={{version}},value=${{ inputs.semversion }}
 
       - name: Gather Postgres Files
