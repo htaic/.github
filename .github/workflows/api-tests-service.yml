@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       environment_name:
-        required: true
+        required: false
         description: "Name of the environment that the tests will run against"
         type: string 
         default: "dev"   
@@ -15,12 +15,12 @@ on:
         type: string 
         default: "http://k8s-ht-dev-saas-uw2-1.dev.hticdev.net/"   
       working_dir:
-        required: true
+        required: false
         description: "working directory"
         type: string
         default: .
       test_arg:
-        required: true
+        required: false
         description: "argument to pass node for integration tests"
         type: string
         default: test:api
