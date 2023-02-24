@@ -51,7 +51,7 @@ jobs:
   api-tests:
     runs-on: ubuntu-latest
     environment: 
-      name: ${{ input.environment_name }}
+      name: ${{ env.environment_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
