@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ${{inputs.node_versions}}
+        node-version: ${{ fromJSON(inputs.node_versions) }}
     environment: 
       name: ${{ inputs.environment_name }}
     steps:
@@ -65,7 +65,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ matrix.node-version }}
           registry-url: https://npm.pkg.github.com/
           scope: '@htaic'
 
