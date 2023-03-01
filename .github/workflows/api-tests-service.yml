@@ -4,30 +4,79 @@ on:
   workflow_call:
     inputs:
       environment_name:
-        required: true
+        required: false
         description: "Name of the environment that the tests will run against"
         type: string 
         default: "dev"   
+      #TODO: set this to be required and come from previous steps output
+      base_url:
+        required: false
+        description: "URL of the k8s that the tests will run against"
+        type: string 
+        default: "http://k8s-ht-dev-saas-uw2-1.dev.hticdev.net/"   
       working_dir:
-        required: true
+        required: false
         description: "working directory"
         type: string
+        default: .
+      test_arg:
+        required: false
+        description: "argument to pass node for integration tests"
+        type: string
+        default: test:api
+      node_versions:
+        required: false
+        description: "List of node version which want to scan"
+        type: string
+        default: "['lts/*']"  
+      node_type:
+        required: false
+        description: "Call node via yarn or npm"
+        type: string
+        default: yarn
+    secrets:
+      GH_READPAT:
+        required: true
+      TEST_USER_EMAIL:
+        required: true
+      TEST_USER_PASSWORD:
+        required: true
+    
+env:
+  TEST_ENV: ${{ inputs.environment_name }}
+  TEST_BASE_URL: ${{ inputs.base_url }}
+  TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+  TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
 jobs:
   api-tests:
     runs-on: ubuntu-latest
-    env:
-      TEST_ENV: ${{ inputs.environment_name }}
-      TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-      TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+    strategy:
+      matrix:
+        node-version: ${{ fromJSON(inputs.node_versions) }}
+    environment: 
+      name: ${{ inputs.environment_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Install yarn
-        run: npm install -g yarn
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@htaic'
 
-      - name: Install Dependencies
-        run: yarn --cwd ${{ inputs.working_dir }}/ install
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: ${{ inputs.node_type }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
-      - name: Run API tests
-        run: yarn --cwd ${{ inputs.working_dir }}/ test:api
+      - name: Run ${{ inputs.node_type }} ${{ inputs.test_arg }}
+        working-directory: ${{ inputs.working_dir }}
+        run: ${{ inputs.node_type }} ${{ inputs.test_arg }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
