@@ -1,0 +1,110 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Build docker package
+
+on:
+  workflow_call:
+    outputs:
+      version_number:
+        description: "Version number from semver"
+        value: ${{ jobs.build.outputs.version_number }}
+      tags:
+        description: "All image tags"
+        value: ${{ jobs.build.outputs.tags }}
+    inputs:
+      image_name:
+        required: true
+        description: "Name of docker registry to publish. Does not need ghcr.io/htaic/ in front."
+        type: string
+      
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+     
+      trigger_release:
+        required: false
+        description: "Toggle to true for docker push all tags"
+        type: boolean
+        default: false
+     
+    secrets:
+      GH_READPAT:
+        required: true
+      GH_USERNAME:
+        required: true
+      CODEFREEZE:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used. This token is needed for cross repo packages. Docker builds with FROM images that are private should use the appropriate token."
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+  GH_MANAGEPACKAGETOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+jobs:
+  build:
+    outputs:
+      version_number: ${{ steps.sem-ver.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
+    name: Run docker Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # THIS STEP NEEDS A CHECKOUT ACTION IN THE SAME JOB FOR IT TO GENERATE VERSIONS
+      - name: Semantic Version
+        id: sem-ver
+        uses: paulhatch/semantic-version@v5.0.2
+        with:
+          change_path: ${{ inputs.working_dir }}
+          search_commit_body: true
+          bump_each_commit: true
+          version_format: "${major}.${minor}.${patch}-${increment}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        if: ${{ env.GH_MANAGEPACKAGETOKEN != '' }}
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }} # this is needed if calling a base image in a different repo
+          password: ${{ env.GH_MANAGEPACKAGETOKEN }} # this is needed if calling a base image in a different repo
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        if: ${{ env.GH_MANAGEPACKAGETOKEN == '' }}
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }} # THIS STEP NEEDS A CHECKOUT ACTION UPSTREAM TO USE THIS TOKEN
+          password: ${{ secrets.GITHUB_TOKEN }} # THIS STEP NEEDS A CHECKOUT ACTION UPSTREAM USE THIS TOKEN
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/htaic/${{ inputs.image_name }}
+          tags: |
+            type=sha
+            type=raw,latest
+            type=ref,event=branch
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          context:  ${{ inputs.working_dir }}
+          push: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
+          labels: ${{ steps.meta.outputs.labels }}
