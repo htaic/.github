@@ -19,7 +19,7 @@ on:
         required: false
         description: "dockerfile's name if it's different than the conventional name"
         type: string
-        default: "dockerfile"
+        default: "Dockerfile"
       node_type:
         required: false
         description: "Call node via yarn or npm"
