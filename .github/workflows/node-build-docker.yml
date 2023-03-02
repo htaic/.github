@@ -162,6 +162,6 @@ jobs:
         with:
           tags: ${{ steps.meta.outputs.tags }}
           context: ${{ inputs.working_dir }}
-          file: ${{ inputs.dockerfile_name }}
+          file: ${{ inputs.working_dir }}/${{ inputs.dockerfile_name }}
           push: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
           labels: ${{ steps.meta.outputs.labels }}
