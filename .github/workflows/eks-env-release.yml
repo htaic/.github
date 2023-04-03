@@ -96,7 +96,7 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha $(if [ -z "$VALUES_FILE" ]; then echo ""; else echo "-f $VALUES_FILE"; fi) $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm upgrade --install ${{ inputs.additional_args }} --debug --namespace hanwha $(if [ -z "$VALUES_FILE" ]; then echo ""; else echo "-f $VALUES_FILE"; fi) $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           kubectl get all --all-namespaces
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}

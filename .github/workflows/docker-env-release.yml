@@ -82,7 +82,7 @@ jobs:
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
           deployment_count=$(kubectl get deployments -A | grep -ci "${HELM_CHART#*/}" || true)
-          helm upgrade --install --atomic --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART
+          helm upgrade --install --atomic --debug --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART
           if [[ "${deployment_count}" == "1" ]]; then kubectl patch deployment "${HELM_CHART#*/}" -n hanwha -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"date\":\"`date +'%s'`\"}}}}}"; fi
           kubectl get all --all-namespaces
         env:
