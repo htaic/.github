@@ -117,9 +117,11 @@ jobs:
         id: sem-ver
         uses: paulhatch/semantic-version@v5.0.2
         with:
+          tag_prefix: "v"
           change_path: ${{ inputs.working_dir }}
           search_commit_body: true
           bump_each_commit: true
+          user_format_type: "csv"
           version_format: "${major}.${minor}.${patch}-${increment}"
 
       - name: Login to Docker Hub
