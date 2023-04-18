@@ -64,6 +64,7 @@ on:
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
   AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+  AWS_REGION: ${{ secrets.REGION }}
 
 jobs:
   release:
