@@ -80,4 +80,6 @@ jobs:
         run: ${{ inputs.node_type }} ${{ inputs.test_arg }}
         env:
           AWS_REGION: ${{ secrets.REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
