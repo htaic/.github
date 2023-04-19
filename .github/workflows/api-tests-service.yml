@@ -79,5 +79,5 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: ${{ inputs.node_type }} ${{ inputs.test_arg }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ secrets.REGION }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
