@@ -34,6 +34,27 @@ on:
         description: "Call node via yarn or npm"
         type: string
         default: yarn
+      AUTH_SERVICE_QUEUE:
+        required: true
+        description: "SQS queue for the auth service"
+        type: string
+        default: "sqs-ht-dev-auth-service-uw2-02"
+      ORG_SERVICE_QUEUE:
+        required: true
+        description: "SQS queue for the org service"
+        type: string
+        default: "sqs-ht-dev-auth-service-uw2-01"      
+      DEVICE_SERVICE_QUEUE:
+        required: true
+        description: "SQS queue for the device service"
+        type: string
+        default: "sqs-ht-dev-auth-service-uw2-03"
+      SITE_SERVICE_QUEUE:
+        required: true
+        description: "SQS queue for the site service"
+        type: string
+        default: "sqs-ht-dev-auth-service-uw2-04"
+
     secrets:
       GH_READPAT:
         required: true
@@ -83,3 +104,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+          AUTH_SERVICE_QUEUE: ${{ inputs.AUTH_SERVICE_QUEUE }}
+          ORG_SERVICE_QUEUE: ${{ inputs.AUTH_SERVICE_QUEUE }}
+          DEVICE_SERVICE_QUEUE: ${{ inputs.AUTH_SERVICE_QUEUE }}
+          SITE_SERVICE_QUEUE: ${{ inputs.AUTH_SERVICE_QUEUE }}
