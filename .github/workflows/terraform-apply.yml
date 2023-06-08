@@ -101,6 +101,17 @@ jobs:
         env:
           TF_WORKSPACE: ${{ steps.tf-workspace.outputs.name }}
 
+      - name: Terraform Refresh
+        id: refresh
+        working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
+        run: terraform refresh -no-color 
+        continue-on-error: true
+        env:
+          TF_WORKSPACE: ${{ steps.tf-workspace.outputs.name }}
+          TF_IN_AUTOMATION: true
+          AWS_ACCESS_KEY_ID: "${{ secrets.APPID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.APPSECRET }}"
+
       - name: Terraform Plan
         id: plan
         working-directory: "./deployments/${{ inputs.target_cloud }}/${{ inputs.target_deployment }}"
