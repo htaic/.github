@@ -48,7 +48,7 @@ on:
         required: false
         description: "command to pass for yarn playwright"
         type: string
-        default: "playwright"
+        default: "playwright test --project chromium"
       jira_project_key:
         required: false
         description: "Required to push results to zephyr scale in jira"
@@ -145,7 +145,7 @@ jobs:
         id: playwright
         if: inputs.playwright
         working-directory: ${{ inputs.working_dir }}
-        run: xvfb-run --auto-servernum -- yarn ${{ inputs.playwright_command }}
+        run: npx ${{ inputs.playwright_command }}
 
       - name: Upload Jest Results - ${{ inputs.jira_project_key }}
         if: inputs.jira_project_key != null
