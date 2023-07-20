@@ -111,7 +111,6 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: |
           printf "\n//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
-          cat .npmrc
 
       # THIS STEP NEEDS A CHECKOUT ACTION IN THE SAME JOB FOR IT TO GENERATE VERSIONS
       - name: Semantic Version
