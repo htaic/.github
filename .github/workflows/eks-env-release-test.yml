@@ -130,7 +130,7 @@ jobs:
 
       - name: Test Deployment
         uses: aurelien-baudet/workflow-dispatch@v2
-        if: ${{ inputs.test_repo != "" }}
+        if: ${{ inputs.test_repo != '' }}
         with:
           workflow: ${{ inputs.workflow_file }}
           repo: ${{ inputs.test_repo }}
