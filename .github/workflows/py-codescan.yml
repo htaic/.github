@@ -1,0 +1,92 @@
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: Scan python package
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      package_name:
+        required: false
+        description: "Name of the package"
+        type: string
+        default: ""
+    secrets:
+      GH_READPAT:
+        required: true
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+  process-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check for SonarCloud properties
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          if [[ -f ./sonar-project.properties ]]; then
+            echo "sonarcloud properties exists!"
+            exit 0
+          else
+            echo "sonarcloud properties missing!"
+            exit 2 # no such file or directory: https://www.cyberciti.biz/faq/linux-bash-exit-status-set-exit-statusin-bash/
+          fi
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+          cd ${{ inputs.working_dir }}
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+
+      - name: Lint with ruff
+        run: |
+          cd ${{ inputs.working_dir }}
+          ruff --format=github --select=E9,F63,F7,F82 --target-version=py37 .
+          ruff --format=github --target-version=py37 .
+        continue-on-error: true
+
+      - name: Test with pytest
+        run: |
+          cd ${{ inputs.working_dir }}
+          pytest --cov=src test/unit --doctest-modules --junitxml=test-results-${{ matrix.python-version }}.xml \
+          --cov-fail-under=80 --cov-report=xml:test-coverage-${{ matrix.python-version }}.xml  --cov-report=term-missing
+        continue-on-error: true
+
+      - name: Fix code coverage paths
+        run: |
+          cd ${{ inputs.working_dir }}
+          sed -i 's/\/home\/runner\/work\/${{ github.event.repository.name }}\/${{ github.event.repository.name }}\/src\/aws\/lambdas\/${{ inputs.package_name }}\/src/\/github\/workspace\/src\/aws\/lambdas\/${{ inputs.package_name }}\/src/g' test-coverage-${{ matrix.python-version }}.xml
+        continue-on-error: true
+
+      - name: Upload pytest test results
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-results-${{ matrix.python-version }}
+          path: ${{ inputs.working_dir }}/test-results-${{ matrix.python-version }}.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.working_dir }}
