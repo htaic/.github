@@ -1,0 +1,90 @@
+name: Upload python package
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        required: true
+        description: "Name of the package"
+        type: string
+      function_name:
+        required: true
+        description: "Name of the lamda function"
+        type: string
+      py_path:
+        required: true
+        description: "path to python files"
+        type: string
+      exclusions:
+        required: false
+        description: "files to ignore"
+        type: string
+        default: "*.sh *.zip"
+      environment:
+        required: false
+        description: "Approval Environment"
+        type: string
+        default: dev        
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+      AWS_REGION:
+        required: false
+      GH_MANAGEPACKAGETOKEN:
+        required: true
+
+env:
+  archiveFormat: "zip"
+  exclusions: ${{ inputs.exclusions }}
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Semantic Version
+        id: version
+        uses: paulhatch/semantic-version@v5.0.2
+        with:
+          search_commit_body: true
+          version_format: "${major}.${minor}.${patch}.${increment}"
+        # traditional triggers
+        # https://gitversion.net/docs/reference/version-increments
+        # major-version-bump-message: "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\\([\\w\\s-]*\\))?(!:|:.*\\n\\n((.+\\n)+\\n)?BREAKING CHANGE:\\s.+)"
+        # minor-version-bump-message: "^(feat)(\\([\\w\\s-]*\\))?:"
+        # patch-version-bump-message: "^(build|chore|ci|docs|fix|perf|refactor|revert|style|test)(\\([\\w\\s-]*\\))?:"
+
+      - name: Generate Zip
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          directory: "${{ inputs.py_path }}/"
+          type: ${{ env.archiveFormat }}
+          filename: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}"
+          exclusions: "${{ env.exclusions }}"
+          
+      - name: Upload Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
+          automatic_release_tag: "${{ steps.version.outputs.version }}"
+          prerelease: ${{ github.ref_name != 'main' }}
+          title: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}"
+          files: |
+            ${{ inputs.py_path }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}
+
+      - name: default deploy
+        if: ${{ github.ref_name == 'main'}}
+        uses: appleboy/lambda-action@v0.1.9
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ secrets.AWS_REGION }}
+          function_name: ${{ inputs.function_name }}
+          zip_file: "${{ inputs.py_path }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}"
