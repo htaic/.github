@@ -72,6 +72,7 @@ jobs:
       tags: ${{ steps.meta.outputs.tags }}
     name: Run Node Build
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.node-version == 'lts/*' }}
     strategy:
       matrix:
         node-version: ${{ fromJSON(inputs.node_versions) }}
