@@ -1,0 +1,126 @@
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: Scan python package
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        required: true
+        description: "Name of the package"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      coverage_path:
+        required: false
+        description: "Path to scan for code coverage (relative to working dir)"
+        type: string
+        default: "src"
+      test_path:
+        required: false
+        description: "Path for unit tests (relative to working dir)"
+        type: string
+        default: "test/unit"
+      junit_results:
+        required: false
+        description: "filename for junit test results"
+        type: string
+        default: "junitreport.xml"
+      coverage_report_path:
+        required: false
+        description: "filename for code coverage report"
+        type: string
+        default: "coveragereport.xml"
+      coverage_timeout:
+        required: false
+        description: "timeout for pytest coverage"
+        type: number
+        default: 80
+      ignore_lint:
+        required: false
+        description: "Set to false to disable ruff (lint) error being throw"
+        type: boolean
+        default: false
+      ignore_test:
+        required: false
+        description: "Set to false to junit and coverage test error being throw"
+        type: boolean
+        default: false
+    secrets:
+      GH_READPAT:
+        required: true
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+  process-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check for SonarCloud properties
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          if [[ -f ./sonar-project.properties ]]; then
+            echo "sonarcloud properties exists!"
+            exit 0
+          else
+            echo "sonarcloud properties missing!"
+            exit 2
+          fi
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd ${{ inputs.working_dir }}
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+
+      # https://docs.github.com/en/github-ae@latest/actions/automating-builds-and-tests/building-and-testing-python
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          cd ${{ inputs.working_dir }}
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        continue-on-error: ${{ inputs.ignore_lint }}
+
+      # - name: Lint with ruff
+      #   run: |
+      #     pip install ruff
+      #     cd ${{ inputs.working_dir }}
+      #     ruff --format=github --select=E9,F63,F7,F82 --target-version=py37 .
+      #     ruff --format=github --target-version=py37 .
+      #   continue-on-error: ${{ inputs.ignore_lint }}
+
+      - name: Test with pytest
+        run: |
+          cd ${{ inputs.working_dir }}
+          pytest --cov=${{ inputs.coverage_path }} ${{ inputs.test_path }} --doctest-modules --junitxml=${{ inputs.junit_results }} --cov-fail-under=${{ inputs.coverage_timeout }} --cov-report=xml:${{ inputs.coverage_report_path }} --cov-report=term-missing
+        continue-on-error: ${{ inputs.ignore_test }}
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.working_dir }}
+          args: >
+            -Dsonar.python.coverage.reportPaths=${{ inputs.coverage_report_path }}
+            -Dsonar.junit.reportPaths=${{ inputs.junit_results }}
+            -Dsonar.sources=${{ inputs.coverage_path }}/
+            -Dsonar.tests=${{ inputs.test_path }}/
