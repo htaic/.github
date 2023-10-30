@@ -113,6 +113,7 @@ jobs:
         continue-on-error: ${{ inputs.ignore_test }}
 
       - name: SonarCloud Scan
+        if: ${{ inputs.ignore_test != true }}
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
@@ -124,3 +125,12 @@ jobs:
             -Dsonar.junit.reportPaths=${{ inputs.junit_results }}
             -Dsonar.sources=${{ inputs.coverage_path }}/
             -Dsonar.tests=${{ inputs.test_path }}/
+
+      - name: SonarCloud Scan - No coverage
+        if: ${{ inputs.ignore_test == true }}
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.working_dir }}
