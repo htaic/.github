@@ -66,7 +66,7 @@ on:
       tag:
         required: false
         type: string
-        default: ""
+        default: "latest"
       dockerimage:
         required: false
         type: string
@@ -121,7 +121,16 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha $(if [ -z "$VALUES_FILE" ]; then echo ""; else echo "-f $VALUES_FILE"; fi) $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          if [ -z "$VALUES_FILE" ]; then 
+            mkdir .helm
+            helm pull $HELM_CHART --untar --untardir .helm
+            CHART_PATH="${HELM_CHART#htaic/}"
+            VALUES_FILE=values.yaml
+            mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
+            sed -i 's/tag: latest/tag: /g' $VALUES_FILE
+            cat $VALUES_FILE
+          fi
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           kubectl get all --all-namespaces
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
@@ -147,7 +156,7 @@ jobs:
           # ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Tag repo
-        if: ${{ inputs.tag != '' }}
+        if: ${{ inputs.dockerimage != '' }}
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "<>" 
@@ -155,7 +164,7 @@ jobs:
           git push origin ${{ inputs.tag }}
 
       - name: Login to Docker Hub
-        if: ${{ inputs.tag != '' }}
+        if: ${{ inputs.dockerimage != '' }}
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -163,7 +172,7 @@ jobs:
           password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
       - name: Tag docker
-        if: ${{ inputs.tag != '' }}
+        if: ${{ inputs.dockerimage != '' }}
         run: |
           docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ github.sha }}
           docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ github.sha }} ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }}
