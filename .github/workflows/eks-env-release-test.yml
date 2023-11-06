@@ -63,6 +63,13 @@ on:
         description: "By default: --project chromium"
         type: string
         default: "--project chromium"
+      tag:
+        required: false
+        type: string
+        default: ""
+      dockerimage:
+        required: false
+        type: string
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -138,3 +145,27 @@ jobs:
           wait-for-completion: true
           inputs: '{ "environment": "${{ inputs.environment }}", "playwright": true, "playwright_command": "${{ inputs.playwright_command }}", "playwright_filters": "${{ inputs.playwright_filter }}" }'
           # ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Tag repo
+        if: ${{ inputs.tag != '' }}
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "<>" 
+          git tag -a ${{ inputs.tag }}
+          git push origin ${{ inputs.tag }}
+
+      - name: Login to Docker Hub
+        if: ${{ inputs.tag != '' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }} 
+          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Tag docker
+        if: ${{ inputs.tag != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ github.sha }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ github.sha }} ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }}
+          
