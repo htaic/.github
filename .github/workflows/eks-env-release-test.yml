@@ -63,6 +63,16 @@ on:
         description: "By default: --project chromium"
         type: string
         default: "--project chromium"
+      tag:
+        required: false
+        type: string
+        default: "latest"
+      dockerimage:
+        required: false
+        type: string
+      new_tag:
+        required: false
+        type: string
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -114,7 +124,16 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha $(if [ -z "$VALUES_FILE" ]; then echo ""; else echo "-f $VALUES_FILE"; fi) $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          if [ -z "$VALUES_FILE" ]; then 
+            mkdir .helm
+            helm pull $HELM_CHART --untar --untardir .helm
+            CHART_PATH="${HELM_CHART#htaic/}"
+            VALUES_FILE=values.yaml
+            mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
+            sed -i 's/tag: latest/tag: /g' $VALUES_FILE
+            cat $VALUES_FILE
+          fi
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           kubectl get all --all-namespaces
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
@@ -138,3 +157,27 @@ jobs:
           wait-for-completion: true
           inputs: '{ "environment": "${{ inputs.environment }}", "playwright": true, "playwright_command": "${{ inputs.playwright_command }}", "playwright_filters": "${{ inputs.playwright_filter }}" }'
           # ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Tag repo
+        if: ${{ inputs.new_tag != '' }}
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "<>" 
+          git tag -f -a ${{ inputs.new_tag }} -m "Passed ${{ inputs.environment }}"
+          git push --force origin ${{ inputs.new_tag }}
+
+      - name: Login to Docker Hub
+        if: ${{ inputs.new_tag != '' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }} 
+          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Tag docker
+        if: ${{ inputs.new_tag != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
+          
