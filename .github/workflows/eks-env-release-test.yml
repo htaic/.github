@@ -130,9 +130,9 @@ jobs:
             CHART_PATH="${HELM_CHART#htaic/}"
             VALUES_FILE=values.yaml
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
-            sed -i 's/tag: latest/tag: /g' $VALUES_FILE
-            cat $VALUES_FILE
           fi
+          sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
+          cat $VALUES_FILE
           helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           kubectl get all --all-namespaces
         env:
