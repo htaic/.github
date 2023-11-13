@@ -123,7 +123,7 @@ jobs:
           --output text))
           EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='${{ inputs.EFS_NAME }}'].FileSystemId" --output text)
           echo "###############\nThe EFS ID was found to be: $EFS_ID\n###############"
-          echo "efs_id=$EFS_ID" >> GITHUB_OUTPUT
+          echo "efsid=$EFS_ID" >> $GITHUB_OUTPUT
 
       - name: Fetch Helm values
         id: values
@@ -131,7 +131,7 @@ jobs:
           HELM_SOURCE=${{ inputs.helm_source }}
           VALUES_FILE=${{ inputs.helm_values }}
           HELM_CHART=${{ inputs.helm_chart }}
-          EFS_ID=${{ steps.efsid.outputs.efs_id }}
+          EFS_ID=${{ steps.efsid.outputs.efsid }}
           helm repo add htaic $HELM_SOURCE && helm repo update
           if [ -z "$VALUES_FILE" ]; then 
             mkdir .helm
@@ -139,9 +139,8 @@ jobs:
             CHART_PATH="${HELM_CHART#htaic/}"
             VALUES_FILE=values.yaml
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
-          else
-            echo "helm_values=$VALUES_FILE" >> GITHUB_OUTPUT
           fi
+          echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
           sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
 
           if [[ $EFS_ID == fs-* ]]; then
@@ -167,7 +166,7 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           kubectl get all --namespace hanwha
         env:
@@ -177,7 +176,6 @@ jobs:
           AWS_REGION: ${{ secrets.REGION }}
           K8S_NAME: ${{ inputs.cluster_name }}
           SERVICE_NAME: ${{ inputs.service_name }}
-          VALUES_FILE: ${{ steps.values.outputs.helm_values }}
           HELM_SOURCE: ${{ inputs.helm_source }}
           HELM_CHART: ${{ inputs.helm_chart }}
           HELM_CHART_VERSION: ${{ inputs.helm_chart_version }}
