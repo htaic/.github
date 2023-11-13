@@ -122,7 +122,6 @@ jobs:
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
           EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='${{ inputs.EFS_NAME }}'].FileSystemId" --output text)
-          echo "###############\nThe EFS ID was found to be: $EFS_ID\n###############"
           echo "efsid=$EFS_ID" >> $GITHUB_OUTPUT
 
       - name: Fetch Helm values
