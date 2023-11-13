@@ -104,11 +104,12 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.APPID }}
           aws-secret-access-key: ${{ secrets.APPSECRET }}
           aws-region: ${{ secrets.REGION }} 
+          role-to-assume: ${{ secrets.ASSUME_ROLE }}
 
       - name: Fetch EFS ID
         id: efsid
@@ -138,7 +139,6 @@ jobs:
           sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
 
           if [[ $EFS_ID == fs-* ]]; then
-              # Use sed to replace the text
               sed -i 's/volumeHandle: YOUR_FILESYSTEM_ID/volumeHandle: '"$EFS_ID"'/' $VALUES_FILE
           fi
 
