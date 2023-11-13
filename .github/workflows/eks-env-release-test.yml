@@ -121,7 +121,6 @@ jobs:
           --role-session-name GitHubPipeline \
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
-          aws efs describe-file-systems
           EFS_NAME="${{ inputs.EFS_NAME }}"
           EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='$EFS_NAME'].FileSystemId" --output text)
           echo "efs_id=$EFS_ID" >> GITHUB_OUTPUT
