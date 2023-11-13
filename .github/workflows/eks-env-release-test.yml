@@ -73,6 +73,9 @@ on:
       new_tag:
         required: false
         type: string
+      update_efs:
+        required: false
+        type: boolean
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -105,9 +108,41 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.APPID }}
           aws-secret-access-key: ${{ secrets.APPSECRET }}
-          aws-region: ${{ secrets.REGION }}
-          #this piece isn't working, so I added an sts assume-role command in the next step
-          # https://github.com/aws-actions/configure-aws-credentials/issues/465
+          aws-region: ${{ secrets.REGION }} 
+
+      - name: Fetch EFS ID
+        id: efsid
+        if: ${{ inputs.update_efs }}
+        run: |
+          EFS_NAME="pvt-efs-"
+          EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='$EFS_NAME'].FileSystemId" --output text)
+          echo "efs_id=$EFS_ID" >> GITHUB_OUTPUT
+
+      - name: Fetch Helm values
+        id: values
+        run: |
+          HELM_SOURCE=${{ inputs.helm_source }}
+          VALUES_FILE=${{ inputs.helm_values }}
+          HELM_CHART=${{ inputs.helm_chart }}
+          EFS_ID=${{ steps.efsid.outputs.efs_id }}
+          helm repo add htaic $HELM_SOURCE && helm repo update
+          if [ -z "$VALUES_FILE" ]; then 
+            mkdir .helm
+            helm pull $HELM_CHART --untar --untardir .helm
+            CHART_PATH="${HELM_CHART#htaic/}"
+            VALUES_FILE=values.yaml
+            mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
+          else
+            echo "helm_values=$VALUES_FILE" >> GITHUB_OUTPUT
+          fi
+          sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
+
+          if [[ $EFS_ID == fs-* ]]; then
+              # Use sed to replace the text
+              sed -i 's/volumeHandle: YOUR_FILESYSTEM_ID/volumeHandle: '"$EFS_ID"'/' $VALUES_FILE
+          fi
+
+          cat $VALUES_FILE
 
       #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
@@ -124,17 +159,9 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          if [ -z "$VALUES_FILE" ]; then 
-            mkdir .helm
-            helm pull $HELM_CHART --untar --untardir .helm
-            CHART_PATH="${HELM_CHART#htaic/}"
-            VALUES_FILE=values.yaml
-            mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
-          fi
-          sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
-          cat $VALUES_FILE
           helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f $VALUES_FILE $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
-          kubectl get all --all-namespaces
+          helm ls -n hanwha
+          kubectl get all --namespace hanwha
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
           AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
@@ -142,7 +169,7 @@ jobs:
           AWS_REGION: ${{ secrets.REGION }}
           K8S_NAME: ${{ inputs.cluster_name }}
           SERVICE_NAME: ${{ inputs.service_name }}
-          VALUES_FILE: ${{ inputs.helm_values }}
+          VALUES_FILE: ${{ steps.values.outputs.helm_values }}
           HELM_SOURCE: ${{ inputs.helm_source }}
           HELM_CHART: ${{ inputs.helm_chart }}
           HELM_CHART_VERSION: ${{ inputs.helm_chart_version }}
