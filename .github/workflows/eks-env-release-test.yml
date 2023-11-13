@@ -139,7 +139,9 @@ jobs:
           sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
 
           if [[ $EFS_ID == fs-* ]]; then
-              sed -i 's/volumeHandle: YOUR_FILESYSTEM_ID/volumeHandle: '"$EFS_ID"'/' $VALUES_FILE
+            sed -i 's/volumeHandle: YOUR_FILESYSTEM_ID/volumeHandle: '"$EFS_ID"'/' $VALUES_FILE
+          else
+            echo "WARNING: EFS_ID WAS NOT PROVIDED OR DID NOT CONTAIN fs-... $EFS_ID"
           fi
 
           cat $VALUES_FILE
