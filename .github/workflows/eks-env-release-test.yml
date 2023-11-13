@@ -73,9 +73,9 @@ on:
       new_tag:
         required: false
         type: string
-      update_efs:
+      EFS_NAME:
         required: false
-        type: boolean
+        type: string
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -113,7 +113,7 @@ jobs:
 
       - name: Fetch EFS ID
         id: efsid
-        if: ${{ inputs.update_efs }}
+        if: ${{ inputs.EFS_NAME }}
         run: |
           export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
           $(aws sts assume-role \
@@ -121,7 +121,8 @@ jobs:
           --role-session-name GitHubPipeline \
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
-          EFS_NAME="pvt-efs-"
+          aws efs describe-file-systems
+          EFS_NAME="${{ inputs.EFS_NAME }}"
           EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='$EFS_NAME'].FileSystemId" --output text)
           echo "efs_id=$EFS_ID" >> GITHUB_OUTPUT
 
