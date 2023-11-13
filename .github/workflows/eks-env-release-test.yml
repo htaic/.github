@@ -121,8 +121,8 @@ jobs:
           --role-session-name GitHubPipeline \
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
-          EFS_NAME="${{ inputs.EFS_NAME }}"
-          EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='$EFS_NAME'].FileSystemId" --output text)
+          EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='${{ inputs.EFS_NAME }}'].FileSystemId" --output text)
+          echo "###############\nThe EFS ID was found to be: $EFS_ID\n###############"
           echo "efs_id=$EFS_ID" >> GITHUB_OUTPUT
 
       - name: Fetch Helm values
