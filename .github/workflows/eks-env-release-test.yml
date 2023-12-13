@@ -167,7 +167,9 @@ jobs:
           helm repo add htaic $HELM_SOURCE && helm repo update
           helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
-          kubectl get all --namespace hanwha
+          sleep 30
+          kubectl logs -n hanwha service/$SERVICE_NAME
+          
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
           AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
