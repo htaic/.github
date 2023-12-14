@@ -76,6 +76,9 @@ on:
       EFS_NAME:
         required: false
         type: string
+      subservice:
+        required: false
+        type: string
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -168,6 +171,12 @@ jobs:
           helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           sleep 30
+
+          subservices=(${{ inputs.subservice }})
+          for subservice in "${subservices[@]}"
+          do
+              kubectl logs -n hanwha "service/$SERVICE_NAME-$subservice"
+          done
           kubectl logs -n hanwha service/$SERVICE_NAME
           
         env:
