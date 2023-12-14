@@ -172,13 +172,15 @@ jobs:
           helm ls -n hanwha
           sleep 30
 
-          subservices=(${{ inputs.subservice }})
-          for subservice in "${subservices[@]}"
-          do
+          if [ -n "${{ inputs.subservice }}" ]; then
+            subservices=(${{ inputs.subservice }})
+            for subservice in "${subservices[@]}"
+            do
               kubectl logs -n hanwha "service/$SERVICE_NAME-$subservice"
-          done
-          kubectl logs -n hanwha service/$SERVICE_NAME
-          
+            done
+          else
+            kubectl logs -n hanwha "service/$SERVICE_NAME"
+          fi          
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
           AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
