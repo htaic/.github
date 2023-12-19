@@ -156,7 +156,7 @@ jobs:
             echo "WARNING: EFS_ID WAS NOT PROVIDED OR DID NOT CONTAIN fs-... $EFS_ID"
           fi
 
-          sed -i 's/trustForwardHeader: true/trustForwardHeader: $ENFORCE_AUTH/' $VALUES_FILE
+          sed -i "s/trustForwardHeader: true/trustForwardHeader: $ENFORCE_AUTH/" $VALUES_FILE
 
           cat $VALUES_FILE
 
