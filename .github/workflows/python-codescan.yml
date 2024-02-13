@@ -48,6 +48,11 @@ on:
         description: "Set to false to junit and coverage test error being throw"
         type: boolean
         default: false
+      python_versions:
+        required: false
+        type: string
+        description: "Override python version(s)"
+        default: '["3.10", "3.11"]'
     secrets:
       GH_READPAT:
         required: true
@@ -59,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ${{ fromJSON( inputs.python_versions ) }}
     steps:
       - uses: actions/checkout@v3
         with:
