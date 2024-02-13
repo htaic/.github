@@ -50,6 +50,7 @@ on:
         default: false
       matrix_data:
         required: false
+        type: string
         description: "Override python version(s)
         default: '["3.10", "3.11"]'
     secrets:
