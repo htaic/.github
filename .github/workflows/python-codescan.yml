@@ -48,7 +48,7 @@ on:
         description: "Set to false to junit and coverage test error being throw"
         type: boolean
         default: false
-      matrix_data:
+      python_versions:
         required: false
         type: string
         description: "Override python version(s)"
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ${{ fromJSON( inputs.matrix_data ) }}
+        python-version: ${{ fromJSON( inputs.python_versions ) }}
     steps:
       - uses: actions/checkout@v3
         with:
