@@ -114,6 +114,12 @@ jobs:
       - name: Test with pytest
         run: |
           cd ${{ inputs.working_dir }}
+          echo "PWD:"
+          pwd
+          ls -aF
+          echo "dumping all dirs below"
+          ls -aRF
+
           pytest --cov=${{ inputs.coverage_path }} ${{ inputs.test_path }} --doctest-modules --junitxml=${{ inputs.junit_results }} --cov-fail-under=${{ inputs.coverage_timeout }} --cov-report=xml:${{ inputs.coverage_report_path }} --cov-report=term-missing
           REPO_NAME=$(basename ${GITHUB_REPOSITORY})
           echo "REPO_NAME: ${REPO_NAME}"
