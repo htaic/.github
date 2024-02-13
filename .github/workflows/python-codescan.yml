@@ -117,6 +117,7 @@ jobs:
           pytest --cov=${{ inputs.coverage_path }} ${{ inputs.test_path }} --doctest-modules --junitxml=${{ inputs.junit_results }} --cov-fail-under=${{ inputs.coverage_timeout }} --cov-report=xml:${{ inputs.coverage_report_path }} --cov-report=term-missing
           REPO_NAME=$(basename ${GITHUB_REPOSITORY})}
           sed -i 's/\/home\/runner\/work\/'${REPO_NAME}'\/'${REPO_NAME}'\//\/github\/workspace\//g' ${{ inputs.coverage_report_path }}
+          cat ${{ inputs.coverage_report_path }}
         continue-on-error: ${{ inputs.ignore_test }}
 
       - name: SonarCloud Scan
