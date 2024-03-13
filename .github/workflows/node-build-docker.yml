@@ -50,6 +50,11 @@ on:
         description: "List of node version which want to scan"
         type: string
         default: "['lts/*']"
+      heap_size:
+        required: false
+        description: "Heap size for building projects with yarn"
+        type: string
+        default: "4096"
     secrets:
       GH_READPAT:
         required: true
@@ -96,6 +101,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
+      - name: Increase heap size
+        working-directory: ${{ inputs.working_dir }}
+        run: export NODE_OPTIONS=--max-old-space-size= ${{ inputs.heap_size }}
+    
       - name: Run ${{ inputs.node_type }} command
         working-directory: ${{ inputs.working_dir }}
         run: ${{ inputs.node_type }} ${{ inputs.node_arg }}
