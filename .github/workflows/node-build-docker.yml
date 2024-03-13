@@ -103,7 +103,7 @@ jobs:
 
       - name: Increase heap size
         working-directory: ${{ inputs.working_dir }}
-        run: export NODE_OPTIONS=--max-old-space-size= ${{ inputs.heap_size }}
+        run: export NODE_OPTIONS=--max-old-space-size=${{ inputs.heap_size }}
     
       - name: Run ${{ inputs.node_type }} command
         working-directory: ${{ inputs.working_dir }}
