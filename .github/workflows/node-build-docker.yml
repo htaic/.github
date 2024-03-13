@@ -30,6 +30,11 @@ on:
         description: "Command to pass yarn for build"
         type: string
         default: "build"
+      node_options:
+        required: false
+        description: "Command to pass yarn for build"
+        type: string
+        default: ""
       working_dir:
         required: false
         description: "Operating path for path dependent steps"
@@ -100,6 +105,7 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: ${{ inputs.node_type }} ${{ inputs.node_arg }}
         env:
+          NODE_OPTIONS: ${{ inputs.node_options }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       # Despite this being a bad idea if someone forgets to clean up the npmrc file in the docker build
