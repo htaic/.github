@@ -83,6 +83,24 @@ on:
         required: false
         type: boolean
         default: true
+      new_subservice_tag_1:
+        required: false
+        type: string  
+      new_subservice_tag_2:
+        required: false
+        type: string    
+      new_subservice_tag_3:
+        required: false
+        type: string 
+      subservice1:
+        required: false
+        type: string 
+      subservice2:
+        required: false
+        type: string  
+      subservice3:
+        required: false
+        type: string   
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -98,7 +116,7 @@ on:
         description: "example: arn:aws:iam::{{accountID}}:role/AWSControlTowerExecution"
       CODEFREEZE:
         required: true
-
+    
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
 
