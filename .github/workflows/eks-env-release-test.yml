@@ -232,4 +232,25 @@ jobs:
           docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }}
           docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
           docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
+
+      - name: Tag docker sub service 1 
+        if: ${{ inputs.new_subservice_tag_1 != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.new_subservice_tag_1 }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.new_subservice_tag_1 }}
+
+      - name: Tag docker sub service 2
+        if: ${{ inputs.new_subservice_tag_2 != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.new_subservice_tag_2 }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.new_subservice_tag_2 }}
+
+      - name: Tag docker sub service 3
+        if: ${{ inputs.new_subservice_tag_3 != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.new_subservice_tag_3 }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.new_subservice_tag_3 }}
           
