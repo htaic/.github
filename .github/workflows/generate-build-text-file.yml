@@ -1,0 +1,28 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Generate build text file 
+
+on:
+    workflow_call:
+      inputs:
+        build_number:
+          required: true
+          type: string
+  
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+  
+      - name: Create build info file
+        run: |
+          echo "Build Number: ${{ inputs.build_number }}" > build_info.txt
+          echo "Commit SHA: ${{ github.sha }}" >> build_info.txt
+#add any addtioanl info you want included into build_info.text here 
+  
+      - name: Upload build info as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-info
+          path: build_info.txt
