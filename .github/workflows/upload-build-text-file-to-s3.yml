@@ -1,0 +1,42 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Upload build text file to s3
+
+on:
+    workflow_call:
+      inputs:
+        aws_access_key_id:
+          required: true
+          type: string
+        aws_secret_access_key:
+          required: true
+          type: string
+        bucket_name:
+          required: true
+          type: string
+        artifact_name:
+          required: true
+          type: string
+        file_path:
+          required: false
+          default: "build_info.txt"
+          type: string
+jobs:
+    upload_to_s3:
+      runs-on: ubuntu-latest
+      steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+            name: ${{ inputs.artifact_name }}
+            path: temp
+
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+            args: --acl public-read --follow-symlinks
+            source_dir: "temp"
+            s3_bucket: ${{ inputs.bucket_name }}
+            s3_key_prefix: "build-info/"
+            aws_access_key_id: ${{ inputs.aws_access_key_id }}
+            aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
+
