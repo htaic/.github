@@ -297,6 +297,6 @@ jobs:
             source_dir: "temp"
             s3_bucket: hanwha-build-info
             s3_key_prefix: "build-info/"
-            aws_access_key_id: ${{ inputs.aws_access_key_id }}
-            aws_secret_access_key: ${{ inputs.aws_secret_access_key }}     
+            aws_access_key_id: ${{ secrets.APPID }}
+            aws_secret_access_key: ${{ secrets.APPSECRET }}   
           
