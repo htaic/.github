@@ -299,7 +299,7 @@ jobs:
             args: --acl public-read --follow-symlinks
         env:
             SOURCE_DIR: "temp"
-            AWS_S3_BUCKET: hanwha-build-info
+            AWS_S3_BUCKET: ${{ secrets.BUILD_INFO_BUCKET }}
             AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}   
           
