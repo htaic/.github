@@ -274,16 +274,18 @@ jobs:
 
       - name: Create build info file
         run: |
-          echo "Service Name: ${{ inputs.service_name }}" >> ${{ inputs.service_name }}_${{ inputs.environment }}_build_info.txt
-          echo "Build Number: ${{github.run_number}}" > ${{ inputs.service_name }}_${{ inputs.environment }}_build_info.txt
-          echo "Commit SHA: ${{ github.sha }}" >> ${{ inputs.service_name }}_${{ inputs.environment }}_build_info.txt
-      #add any addtioanl info you want included into build_info.text here 
+          echo "{
+          \"Service Name\": \"${{ inputs.service_name }}\",
+          \"Build Number\": \"${{github.run_number}}\", 
+          \"Commit SHA\": \"${{ github.sha }}\" 
+          }" >> ${{ inputs.service_name }}_${{ inputs.environment }}_build_info.json
+      #add any addtioanl info you want included into build_info.json above 
   
       - name: Upload build info as artifact
         uses: actions/upload-artifact@v3
         with:
           name: build-info
-          path: "${{ inputs.service_name }}_${{ inputs.environment }}_build_info.txt"    
+          path: "${{ inputs.service_name }}_${{ inputs.environment }}_build_info.json"    
 
       - name: Download artifact
         uses: actions/download-artifact@v3
@@ -295,6 +297,7 @@ jobs:
         uses: jakejarvis/s3-sync-action@master
         with:
             args: --acl public-read --follow-symlinks
+        env:
             SOURCE_DIR: "temp"
             AWS_S3_BUCKET: hanwha-build-info
             AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
