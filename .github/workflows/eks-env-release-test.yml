@@ -302,4 +302,5 @@ jobs:
             AWS_S3_BUCKET: ${{ secrets.BUILD_INFO_BUCKET }}
             AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}   
+            AWS_REGION: us-west-2
           
