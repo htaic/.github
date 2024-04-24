@@ -278,14 +278,14 @@ jobs:
           \"Service Name\": \"${{ inputs.service_name }}\",
           \"Build Number\": \"${{github.run_number}}\", 
           \"Commit SHA\": \"${{ github.sha }}\" 
-          }" >> ${{ inputs.service_name }}_${{ inputs.environment }}_build_info.json
+          }" >> ${{ inputs.environment }}-${{ inputs.service_name }.json
       #add any addtioanl info you want included into build_info.json above 
   
       - name: Upload build info as artifact
         uses: actions/upload-artifact@v3
         with:
           name: build-info
-          path: "${{ inputs.service_name }}_${{ inputs.environment }}_build_info.json"    
+          path: "${{ inputs.environment }}-${{ inputs.service_name }.json"    
 
       - name: Download artifact
         uses: actions/download-artifact@v3
@@ -293,14 +293,14 @@ jobs:
             name: build-info
             path: temp
 
-     # - name: Upload to S3
-     #   uses: jakejarvis/s3-sync-action@master
-     #   with:
-     #       args: --acl public-read --follow-symlinks
-     #   env:
-     #       SOURCE_DIR: "temp"
-     #       AWS_S3_BUCKET: hanwha-build-info
-     #       AWS_ACCESS_KEY_ID: ${{ secrets.S3ACCOUNT }}
-     #       AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}   
-     #       AWS_REGION: us-west-2
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+            args: --acl public-read --follow-symlinks
+        env:
+            SOURCE_DIR: "temp"
+            AWS_S3_BUCKET: hanwha-build-info
+            AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}   
+            AWS_REGION: ${{ secrets.APPSECRET }}
           
