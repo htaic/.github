@@ -285,7 +285,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-info
-          path: "${{ inputs.environment }}-${{ inputs.service_name }.json"    
+          path: "${{ inputs.environment }}-${{ inputs.service_name }}.json"    
 
       - name: Download artifact
         uses: actions/download-artifact@v3
