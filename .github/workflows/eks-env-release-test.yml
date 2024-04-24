@@ -301,6 +301,6 @@ jobs:
             SOURCE_DIR: "temp"
             AWS_S3_BUCKET: hanwha-build-info
             AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}   
-            AWS_REGION: ${{ secrets.APPSECRET }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}   
+            AWS_REGION: us-west-2
           
