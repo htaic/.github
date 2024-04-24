@@ -278,7 +278,7 @@ jobs:
           \"ServiceName\": \"${{ inputs.service_name }}\",
           \"BuildNumber\": \"${{github.run_number}}\", 
           \"CommitSHA\": \"${{ github.sha }}\" 
-          }" >> ${{ inputs.environment }}-${{ inputs.service_name }.json
+          }" >> ${{ inputs.environment }}-${{ inputs.service_name }}.json
       #add any addtioanl info you want included into build_info.json above 
   
       - name: Upload build info as artifact
