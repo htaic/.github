@@ -275,9 +275,9 @@ jobs:
       - name: Create build info file
         run: |
           echo "{
-          \"Service Name\": \"${{ inputs.service_name }}\",
-          \"Build Number\": \"${{github.run_number}}\", 
-          \"Commit SHA\": \"${{ github.sha }}\" 
+          \"ServiceName\": \"${{ inputs.service_name }}\",
+          \"BuildNumber\": \"${{github.run_number}}\", 
+          \"CommitSHA\": \"${{ github.sha }}\" 
           }" >> ${{ inputs.environment }}-${{ inputs.service_name }.json
       #add any addtioanl info you want included into build_info.json above 
   
