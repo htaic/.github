@@ -281,11 +281,11 @@ jobs:
           }" >> ${{ inputs.environment }}-${{ inputs.service_name }}.json
       #add any addtioanl info you want included into build_info.json above 
   
-      - name: Upload build info as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-info
-          path: "${{ inputs.environment }}-${{ inputs.service_name }}.json"    
+#      - name: Upload build info as artifact
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: build-info
+#          path: "${{ inputs.environment }}-${{ inputs.service_name }}.json"    
 
       - name: Download artifact
         uses: actions/download-artifact@v3
