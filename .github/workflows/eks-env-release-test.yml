@@ -293,14 +293,14 @@ jobs:
             name: build-info
             path: temp
 
-     # - name: Upload to S3
-     #   uses: jakejarvis/s3-sync-action@master
-     #   with:
-     #       args: --follow-symlinks
-     #   env:
-     #       SOURCE_DIR: "temp"
-     #       AWS_S3_BUCKET: hanwha-build-info
-     #       AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
-     #       AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}   
-     #       AWS_REGION: us-west-2
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+            args: --follow-symlinks
+        env:
+            SOURCE_DIR: "temp"
+            AWS_S3_BUCKET: hanwha-build-info
+            AWS_ACCESS_KEY_ID: ${{ secrets.S3ACCOUNT }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}   
+            AWS_REGION: us-west-2
           
