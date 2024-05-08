@@ -230,6 +230,7 @@ jobs:
 
           
       - name: Get short Tag Version
+        id: write_tag
         run: |
           git_ref="${{github.ref}}"
           branch_name="${git_ref##*/}"
