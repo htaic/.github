@@ -228,6 +228,13 @@ jobs:
           inputs: '{ "environment": "${{ inputs.environment }}", "playwright": true, "playwright_command": "${{ inputs.playwright_command }}", "playwright_filters": "${{ inputs.playwright_filter }}" }'
           # ref: ${{ github.event.pull_request.head.ref }}
 
+          
+      - name: Get short Tag Version
+        id: get-short-sha
+        run: |
+          id=$(echo ${{github.ref}} | cut -c 9-)
+          echo "::set-output name=id::$id"
+
       - name: Tag repo
         if: ${{ inputs.new_tag != '' }}
         run: |
