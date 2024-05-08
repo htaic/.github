@@ -235,6 +235,7 @@ jobs:
           branch_name="${git_ref##*/}"
           new_tag="${branch_name}-stable"
           echo "$new_tag"
+          echo "::set-output name=new_tag::$new_tag"
         continue-on-error: true 
 
       - name: Tag repo
