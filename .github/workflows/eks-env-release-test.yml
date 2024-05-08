@@ -230,10 +230,12 @@ jobs:
 
           
       - name: Get short Tag Version
-        id: get-short-tag-verion
         run: |
-          id=$(echo ${{github.ref}} | cut -c 9-)
-          echo "::set-output name=id::$id"
+          git_ref="${{github.ref}}"
+          branch_name="${git_ref##*/}"
+          new_tag="${branch_name}-stable"
+          echo "$new_tag"
+        continue-on-error: true 
 
       - name: Tag repo
         if: ${{ inputs.new_tag != '' }}
