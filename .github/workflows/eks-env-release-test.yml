@@ -230,7 +230,7 @@ jobs:
 
           
       - name: Get short Tag Version
-        id: get-short-sha
+        id: get-short-tag-verion
         run: |
           id=$(echo ${{github.ref}} | cut -c 9-)
           echo "::set-output name=id::$id"
