@@ -214,6 +214,8 @@ jobs:
           TAG=${{ inputs.tag }}
           ENFORCE_AUTH=${{ inputs.ENFORCE_AUTH }}
           helm repo add htaic $HELM_SOURCE && helm repo update
+          echo "NEW_TAG: $NEW_TAG"
+          echo "TAG: $TAG
           if [ -z "$VALUES_FILE" ]; then 
             mkdir .helm
             helm pull $HELM_CHART --untar --untardir .helm
@@ -222,7 +224,7 @@ jobs:
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
             if [[ ${{ inputs.new_tag != '' }} ]]; then
              echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
-             sed -i 's|tag: "latest"|tag: "$NEW_TAG"|g' $VALUES_FILE
+             sed -i "s|tag: "latest"|tag: "$NEW_TAG"|g" $VALUES_FILE
             else
               echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
               sed -i "s|tag: "latest"|tag: "$TAG"|g" $VALUES_FILE
