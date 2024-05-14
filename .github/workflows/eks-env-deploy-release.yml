@@ -148,15 +148,7 @@ jobs:
           --output text))
           EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='${{ inputs.EFS_NAME }}'].FileSystemId" --output text)
           echo "efsid=$EFS_ID" >> $GITHUB_OUTPUT
-          - name: Get short Tag Version
-          id: write_tag
-          run: |
-            git_ref="${{github.ref}}"
-            branch_name="${git_ref##*/}"
-            new_tags="${branch_name}-stable"
-            echo "$new_tags"
-            echo "new_tag=$new_tags" >> $GITHUB_ENV
-          continue-on-error: true 
+          
       - name: Get short Tag Version
         id: write_tag
         run: |
@@ -165,7 +157,7 @@ jobs:
           new_tags="${branch_name}-stable"
           echo "$new_tags"
           echo "new_tag=$new_tags" >> $GITHUB_ENV
-          continue-on-error: true 
+        continue-on-error: true 
   
       - name: Tag repo
         if: ${{ inputs.new_tag != '' }}
