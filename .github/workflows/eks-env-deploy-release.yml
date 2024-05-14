@@ -210,6 +210,7 @@ jobs:
           VALUES_FILE=${{ inputs.helm_values }}
           HELM_CHART=${{ inputs.helm_chart }}
           EFS_ID=${{ steps.efsid.outputs.efsid }}
+          NEW_TAG=${{ inputs.new_tag }}
           ENFORCE_AUTH=${{ inputs.ENFORCE_AUTH }}
           helm repo add htaic $HELM_SOURCE && helm repo update
           if [ -z "$VALUES_FILE" ]; then 
@@ -220,10 +221,12 @@ jobs:
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
             if [[ ${{ inputs.new_tag != '' }} ]]; then
              echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
-             sed -i 's/tag: "latest"/tag:' "${{ inputs.new_tag }}"'/g' $VALUES_FILE
+             echo "new tag $NEW_TAG"
+             sed -i "s|tag: "latest"|tag: "$NEW_TAG"|g" $VALUES_FILE
             else
               echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
-              sed -i "s/tag: "latest"/tag: "${{ inputs.tag }}"/g" $VALUES_FILE
+              echo "step 2 .... new tag $NEW_TAG"
+              sed -i "s|tag: "latest"|tag: "$NEW_TAG"|g" $VALUES_FILE
             fi
           fi
 
