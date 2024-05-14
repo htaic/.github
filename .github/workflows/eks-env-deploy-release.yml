@@ -220,10 +220,10 @@ jobs:
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
             if [[ ${{ inputs.new_tag != '' }} ]]; then
              echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
-             sed -i 's/tag: latest/tag: ${{ inputs.new_tag }}/g' $VALUES_FILE
+             sed -i 's/tag: "latest"/tag: "${{ inputs.new_tag }}"/g' $VALUES_FILE
             else
               echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
-              sed -i 's/tag: latest/tag: ${{ inputs.tag }}/g' $VALUES_FILE
+              sed -i 's/tag: "latest"/tag: "${{ inputs.tag }}"/g' $VALUES_FILE
             fi
           fi
 
