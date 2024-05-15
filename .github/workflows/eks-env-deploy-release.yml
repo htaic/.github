@@ -238,8 +238,8 @@ jobs:
           sed -i "s/trustForwardHeader: true/trustForwardHeader: $ENFORCE_AUTH/" $VALUES_FILE
 
           cat $VALUES_FILE
-          # VALUES_FILE=${{ inputs.helm_values }}
-          # cat $VALUES_FILE
+          VALUES_FILES= $VALUES_FILE
+          echo "VALUES_FILES: $VALUES_FILE"
       #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
       # not authenticated and will result in permission errors.
@@ -255,7 +255,7 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.VALUES_FILE }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.VALUES_FILES }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           sleep 30
 
