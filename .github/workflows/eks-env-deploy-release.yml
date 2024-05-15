@@ -238,7 +238,7 @@ jobs:
           sed -i "s/trustForwardHeader: true/trustForwardHeader: $ENFORCE_AUTH/" $VALUES_FILE
 
           cat $VALUES_FILE
-          VALUES_FILES= $VALUES_FILE
+          VALUES_FILES=$VALUES_FILE
           echo "VALUES_FILES: $VALUES_FILE"
       #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
       # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
