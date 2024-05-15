@@ -210,12 +210,10 @@ jobs:
           VALUES_FILE=${{ inputs.helm_values }}
           HELM_CHART=${{ inputs.helm_chart }}
           EFS_ID=${{ steps.efsid.outputs.efsid }}
-          NEW_TAG=${{ steps.write_tag.outputs.new_tag }}
           TAG=${{ inputs.tag }}
           ENFORCE_AUTH=${{ inputs.ENFORCE_AUTH }}
           helm repo add htaic $HELM_SOURCE && helm repo update
-          echo "NEW_TAG: $NEW_TAG"
-          echo "TAG: $TAG
+          echo "TAG: $TAG"
           if [ -z "$VALUES_FILE" ]; then 
             mkdir .helm
             helm pull $HELM_CHART --untar --untardir .helm
