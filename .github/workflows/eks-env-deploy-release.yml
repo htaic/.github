@@ -154,7 +154,7 @@ jobs:
         run: |
           git_ref="${{github.ref}}"
           branch_name="${git_ref##*/}"
-          new_tags="${branch_name}-${{ github.run_number }}-rc"
+          new_tags="${branch_name}-${{ github.run_number }}"
           echo "$new_tags"
           echo "new_tag=$new_tags" >> $GITHUB_ENV
         continue-on-error: true 
