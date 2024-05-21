@@ -51,7 +51,7 @@ jobs:
         with:
           directory: "${{ inputs.working_dir }}/"
           type: ${{ env.archiveFormat }}
-          filename: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}-release"
+          filename: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release.${{ env.archiveFormat}}"
           exclusions: "${{ env.exclusions }}"
           
       - name: Upload Release
@@ -62,4 +62,4 @@ jobs:
           prerelease: ${{ github.ref_name != 'release-1.0.0' }}
           title: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release"
           files: |
-            ${{ inputs.working_dir }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}-release
+            ${{ inputs.working_dir }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release.${{ env.archiveFormat}}
