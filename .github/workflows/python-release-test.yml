@@ -62,4 +62,4 @@ jobs:
           prerelease: ${{ github.ref_name != 'release-1.0.0' }}
           title: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release"
           files: |
-            ${{ inputs.working_dir }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}
+            ${{ inputs.working_dir }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}-release
