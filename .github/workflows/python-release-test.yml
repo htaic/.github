@@ -58,8 +58,8 @@ jobs:
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GH_MANAGEPACKAGETOKEN }}"
-          automatic_release_tag: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release"
+          automatic_release_tag: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}release"
           prerelease: ${{ github.ref_name != 'release-' }}
-          title: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release"
+          title: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}release"
           files: |
-            ${{ inputs.working_dir }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}-release.${{ env.archiveFormat}}
+            ${{ inputs.working_dir }}/${{ inputs.package_name }}-${{ steps.version.outputs.version }}release.${{ env.archiveFormat}}
