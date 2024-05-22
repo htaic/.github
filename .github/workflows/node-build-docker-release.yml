@@ -1,0 +1,173 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Build node docker package
+
+on:
+  workflow_call:
+    outputs:
+      version_number:
+        description: "Version number from semver"
+        value: ${{ jobs.node-build.outputs.version_number }}
+      tags:
+        description: "All image tags"
+        value: ${{ jobs.node-build.outputs.tags }}
+    inputs:
+      image_name:
+        required: true
+        description: "Name of docker registry to publish. Does not need ghcr.io/htaic/ in front."
+        type: string
+      dockerfile_name:
+        required: false
+        description: "dockerfile's name if it's different than the conventional name"
+        type: string
+        default: "Dockerfile"
+      node_type:
+        required: false
+        description: "Call node via yarn or npm"
+        type: string
+        default: yarn
+      node_arg:
+        required: false
+        description: "Command to pass yarn for build"
+        type: string
+        default: "build"
+      node_options:
+        required: false
+        description: "Command to pass yarn for build"
+        type: string
+        default: ""
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      npmtoken_for_docker:
+        required: false
+        description: "If a yarn or npm command requiring @htaic access call from inside the docker build, this is required. Ensure the .npmrc file is removed as a docker build step"
+        type: boolean
+        default: false
+      trigger_release:
+        required: false
+        description: "Toggle to true for docker push all tags"
+        type: boolean
+        default: false
+      node_versions:
+        required: false
+        description: "List of node version which want to scan"
+        type: string
+        default: "['lts/*']"
+    secrets:
+      GH_READPAT:
+        required: true
+      GH_USERNAME:
+        required: true
+      CODEFREEZE:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used. This token is needed for cross repo packages. Docker builds with FROM images that are private should use the appropriate token."
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+  GH_MANAGEPACKAGETOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+jobs:
+  node-build:
+    outputs:
+      version_number: ${{ steps.sem-ver.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
+    name: Run Node Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ${{ fromJSON(inputs.node_versions) }}
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: "@htaic"
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: ${{ inputs.node_type }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run ${{ inputs.node_type }} command
+        working-directory: ${{ inputs.working_dir }}
+        run: ${{ inputs.node_type }} ${{ inputs.node_arg }}
+        env:
+          NODE_OPTIONS: ${{ inputs.node_options }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      # Despite this being a bad idea if someone forgets to clean up the npmrc file in the docker build
+      # it is the recommended practice from NPM (although they suggest an env var which could expose the
+      # token too)
+      # https://docs.npmjs.com/docker-and-private-modules#create-and-check-in-a-project-specific-npmrc-file
+      - name: Create NPMRC for docker
+        if: inputs.npmtoken_for_docker
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          printf "\n//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
+
+      # THIS STEP NEEDS A CHECKOUT ACTION IN THE SAME JOB FOR IT TO GENERATE VERSIONS
+      - name: Semantic Version
+        id: sem-ver
+        uses: paulhatch/semantic-version@v5.0.2
+        with:
+          change_path: ${{ inputs.working_dir }}
+          search_commit_body: true
+          bump_each_commit: true
+          version_format: "${major}.${minor}.${patch}-${increment}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        if: ${{ env.GH_MANAGEPACKAGETOKEN != '' }}
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }} # this is needed if calling a base image in a different repo
+          password: ${{ env.GH_MANAGEPACKAGETOKEN }} # this is needed if calling a base image in a different repo
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        if: ${{ env.GH_MANAGEPACKAGETOKEN == '' }}
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }} # THIS STEP NEEDS A CHECKOUT ACTION UPSTREAM TO USE THIS TOKEN
+          password: ${{ secrets.GITHUB_TOKEN }} # THIS STEP NEEDS A CHECKOUT ACTION UPSTREAM USE THIS TOKEN
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/htaic/${{ inputs.image_name }}
+          tags: |
+            type=sha
+            type=raw,latest
+            type=raw,${{ matrix.node-version }}
+            type=ref,event=branch
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          context: ${{ inputs.working_dir }}
+          file: ${{ inputs.working_dir }}/${{ inputs.dockerfile_name }}
+          push: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
+          labels: ${{ steps.meta.outputs.labels }}
