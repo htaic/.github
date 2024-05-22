@@ -51,7 +51,7 @@ jobs:
         with:
           directory: "${{ inputs.working_dir }}/"
           type: ${{ env.archiveFormat }}
-          filename: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}.${{ env.archiveFormat}}"
+          filename: "${{ inputs.package_name }}-${{ steps.version.outputs.version }}release.${{ env.archiveFormat}}"
           exclusions: "${{ env.exclusions }}"
           
       - name: Upload Release
