@@ -46,10 +46,10 @@ on:
         type: boolean
         default: false
       trigger_release:
-        required: true
+        required: false
         description: "Toggle to true for docker push all tags"
         type: boolean
-        default: true
+        default: false
       node_versions:
         required: false
         description: "List of node version which want to scan"
@@ -160,11 +160,10 @@ jobs:
         with:
           images: ghcr.io/htaic/${{ inputs.image_name }}
           tags: |
-            type=sha
             type=raw,${{ env.new_tag1 }}
-            type=ref,event=branch
-            type=schedule,pattern={{date 'YYYYMMDD'}}
-            type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
+           # type=ref,event=branch
+            # type=schedule,pattern={{date 'YYYYMMDD'}}
+            
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
