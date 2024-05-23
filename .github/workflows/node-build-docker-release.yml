@@ -183,7 +183,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          tags: ${{ env.new_tag1 }}
+          tags: ${{ steps.meta.outputs.tags }}
           context: ${{ inputs.working_dir }}
           file: ${{ inputs.working_dir }}/${{ inputs.dockerfile_name }}
           push: true
