@@ -186,5 +186,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           context: ${{ inputs.working_dir }}
           file: ${{ inputs.working_dir }}/${{ inputs.dockerfile_name }}
-          push: push
+          push: true
           labels: ${{ steps.meta.outputs.labels }}
