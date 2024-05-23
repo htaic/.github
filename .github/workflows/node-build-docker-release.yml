@@ -49,7 +49,7 @@ on:
         required: true
         description: "Toggle to true for docker push all tags"
         type: boolean
-        default: false
+        default: true
       node_versions:
         required: false
         description: "List of node version which want to scan"
