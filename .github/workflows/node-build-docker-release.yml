@@ -160,10 +160,11 @@ jobs:
         with:
           images: ghcr.io/htaic/${{ inputs.image_name }}
           tags: |
+            type=sha
             type=raw,${{ env.new_tag1 }}
-           # type=ref,event=branch
-            # type=schedule,pattern={{date 'YYYYMMDD'}}
-            
+            type=ref,event=branch
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -174,8 +175,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: test-ky
           context: ${{ inputs.working_dir }}
           file: ${{ inputs.working_dir }}/${{ inputs.dockerfile_name }}
-          push: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
+          push: true
           labels: ${{ steps.meta.outputs.labels }}
