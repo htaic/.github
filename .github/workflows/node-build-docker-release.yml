@@ -144,6 +144,16 @@ jobs:
           username: ${{ github.repository_owner }} # THIS STEP NEEDS A CHECKOUT ACTION UPSTREAM TO USE THIS TOKEN
           password: ${{ secrets.GITHUB_TOKEN }} # THIS STEP NEEDS A CHECKOUT ACTION UPSTREAM USE THIS TOKEN
 
+      - name: Get short Tag Version
+        id: write_tag
+        run: |
+            git_ref="${{github.ref}}"
+            branch_name="${git_ref##*/}"
+            new_tags="${branch_name}-${{ github.run_number }}"
+            echo "$new_tags"
+            echo "new_tag1=$new_tags" >> $GITHUB_ENV
+        continue-on-error: true 
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -151,8 +161,8 @@ jobs:
           images: ghcr.io/htaic/${{ inputs.image_name }}
           tags: |
             type=sha
-            type=raw,latest
-            type=raw,${{ matrix.node-version }}
+            type=raw,write_tag
+            type=raw,$new_tag1
             type=ref,event=branch
             type=schedule,pattern={{date 'YYYYMMDD'}}
             type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
