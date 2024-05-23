@@ -46,7 +46,7 @@ on:
         type: boolean
         default: false
       trigger_release:
-        required: false
+        required: true
         description: "Toggle to true for docker push all tags"
         type: boolean
         default: false
