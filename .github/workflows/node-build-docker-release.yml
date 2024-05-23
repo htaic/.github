@@ -161,8 +161,7 @@ jobs:
           images: ghcr.io/htaic/${{ inputs.image_name }}
           tags: |
             type=sha
-            type=raw,write_tag
-            type=raw,$new_tag1
+            type=raw,${{ env.new_tag1 }}
             type=ref,event=branch
             type=schedule,pattern={{date 'YYYYMMDD'}}
             type=semver,pattern={{version}},value=${{ steps.sem-ver.outputs.version }}
