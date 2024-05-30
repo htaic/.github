@@ -1,0 +1,32 @@
+name: Manual Static Analysis
+ 
+run-name: '${{ github.event.sender.login }} executed manual static analysis on ${{ inputs.REPO_NAME }}'
+
+on:
+  workflow_dispatch:
+    inputs:
+      REPO_NAME:
+        description: 'Repository'
+        required: true
+        type: string
+        default: 'Insert Repo Name'
+      BRANCH:
+        description: 'Target Branch'
+        required: true
+        type: string
+        default: 'release'
+      BUILD_PATH:
+        description: 'Target Path'
+        required: true
+        type: string
+        default: '.'
+
+jobs:
+  static-analysis:
+    name: Analysis code quality
+    runs-on: ubuntu-latest
+    uses: htaic/.github/.github/workflows/static-analysis.yml@AN-1325
+    with:
+      REPO_NAME: ${{ inputs.REPO_NAME }}
+      BUILD_PATH: ${{ inputs.BUILD_PATH }}
+      BRANCH: ${{ inputs.BRANCH }}
