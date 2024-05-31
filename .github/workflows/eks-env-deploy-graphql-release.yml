@@ -1,1 +1,329 @@
+name: Release docker package
 
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        description: "Name of helm controlled service to release"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      helm_values:
+        required: false
+        description: "Path of local helm values.yaml file"
+        type: string
+      helm_source:
+        required: false
+        description: "Helm URL to register packages"
+        type: string
+        default: https://htaic.github.io/helm-charts
+      helm_chart:
+        required: true
+        description: "Name of helm package"
+        type: string
+      helm_chart_version:
+        required: false
+        description: "Version constraint for the chart version to use (e.g. 1.1.1 or ^2.0.0)"
+        type: string
+      cluster_name:
+        required: true
+        description: "Name of EKS cluster"
+        type: string
+      environment:
+        required: false
+        description: "Approval Environment"
+        type: string
+        default: dev
+      additional_args:
+        required: false
+        description: "Apply additional aguments; By default --atomic is used"
+        type: string
+        default: " --atomic "
+      workflow_file:
+        required: false
+        description: "File name of test action"
+        type: string
+        default: ""
+      test_repo:
+        required: false
+        description: "Repo name to trigger workflow for test"
+        type: string
+        default: ""
+      playwright_command:
+        required: false
+        description: "playright test command"
+        type: string
+        default: "playwright test"
+      playwright_filter:
+        required: false
+        description: "By default: --project chromium"
+        type: string
+        default: "--project chromium"
+      tag:
+        required: false
+        type: string
+        default: "latest"
+      dockerimage:
+        required: false
+        type: string
+      new_tag:
+        required: false
+        type: string
+      EFS_NAME:
+        required: false
+        type: string
+      subservice:
+        required: false
+        type: string
+      ENFORCE_AUTH:
+        required: false
+        type: boolean
+        default: true
+      new_subservice_tag_1:
+        required: false
+        type: string  
+      new_subservice_tag_2:
+        required: false
+        type: string    
+      new_subservice_tag_3:
+        required: false
+        type: string 
+      subservice1:
+        required: false
+        type: string 
+      subservice2:
+        required: false
+        type: string  
+      subservice3:
+        required: false
+        type: string   
+    secrets:
+      GH_MANAGEPACKAGETOKEN:
+        required: true
+      APPID:
+        required: true
+      APPSECRET:
+        required: true
+      REGION:
+        required: true
+        description: "example: us-west-2"
+      ASSUME_ROLE:
+        required: true
+        description: "example: arn:aws:iam::{{accountID}}:role/AWSControlTowerExecution"
+      CODEFREEZE:
+        required: true
+    
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.APPID }}
+          aws-secret-access-key: ${{ secrets.APPSECRET }}
+          aws-region: ${{ secrets.REGION }} 
+          # role-to-assume: ${{ secrets.ASSUME_ROLE }} # still doesn't work...
+
+      - name: Fetch EFS ID
+        id: efsid
+        if: ${{ inputs.EFS_NAME }}
+        run: |
+          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+          $(aws sts assume-role \
+          --role-arn ${{ secrets.ASSUME_ROLE }} \
+          --role-session-name GitHubPipeline \
+          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+          --output text))
+          EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='${{ inputs.EFS_NAME }}'].FileSystemId" --output text)
+          echo "efsid=$EFS_ID" >> $GITHUB_OUTPUT
+          
+      - name: Get short Tag Version
+        id: write_tag
+        run: |
+          git_ref="${{github.ref}}"
+          branch_name="${git_ref##*/}"
+          new_tags="${branch_name}-${{ github.run_number }}"
+          echo "$new_tags"
+          echo "new_tag=$new_tags" >> $GITHUB_ENV
+          echo "env_tag=${{ inputs.environment }}" >> $GITHUB_ENV
+        continue-on-error: true 
+  
+      - name: Tag repo
+        if: ${{ inputs.new_tag != '' }}
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "<>" 
+          git tag -f -a ${{ inputs.new_tag }} -m "Passed ${{ inputs.environment }}"
+          git push --force origin ${{ inputs.new_tag }}
+  
+      - name: Login to Docker Hub
+        if: ${{ inputs.new_tag != '' || inputs.new_subservice_tag_1 != '' || inputs.new_subservice_tag_2 != '' || inputs.new_subservice_tag_3 != ''}}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GH_USERNAME }} 
+          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+  
+      - name: Tag docker
+        if: ${{ inputs.new_tag != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
+  
+      - name: Tag docker sub service 1 
+        if: ${{ inputs.new_subservice_tag_1 != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.new_subservice_tag_1 }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.new_subservice_tag_1 }}
+  
+      - name: Tag docker sub service 2
+        if: ${{ inputs.new_subservice_tag_2 != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.new_subservice_tag_2 }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice2 }}:${{ inputs.new_subservice_tag_2 }}
+  
+      - name: Tag docker sub service 3
+        if: ${{ inputs.new_subservice_tag_3 != '' }}
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.tag }}
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.new_subservice_tag_3 }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice3 }}:${{ inputs.new_subservice_tag_3 }}
+  
+      - name: Fetch Helm values
+        id: values
+        run: |
+          HELM_SOURCE=${{ inputs.helm_source }}
+          VALUES_FILE=${{ inputs.helm_values }}
+          HELM_CHART=${{ inputs.helm_chart }}
+          EFS_ID=${{ steps.efsid.outputs.efsid }}
+          TAG=${{ inputs.tag }}
+          ENFORCE_AUTH=${{ inputs.ENFORCE_AUTH }}
+          helm repo add htaic $HELM_SOURCE && helm repo update
+          echo "TAG: $TAG"
+          if [ -z "$VALUES_FILE" ]; then 
+            mkdir .helm
+            helm pull $HELM_CHART --untar --untardir .helm
+            CHART_PATH="${HELM_CHART#htaic/}"
+            VALUES_FILE=values.yaml
+            mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
+            if [[ ${{ inputs.new_tag != '' }} ]]; then
+             echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
+             sed -i "s|tag: "latest"|tag: "$new_tag"|g" $VALUES_FILE
+            else
+              echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
+              sed -i "s|tag: "latest"|tag: "$TAG"|g" $VALUES_FILE
+            fi
+          fi
+
+          if [[ $EFS_ID == fs-* ]]; then
+            sed -i 's/volumeHandle: YOUR_FILESYSTEM_ID/volumeHandle: '"$EFS_ID"'/' $VALUES_FILE
+          else
+            echo "WARNING: EFS_ID WAS NOT PROVIDED OR DID NOT CONTAIN fs-... $EFS_ID"
+          fi
+
+          sed -i "s/trustForwardHeader: true/trustForwardHeader: $ENFORCE_AUTH/" $VALUES_FILE
+
+          cat $VALUES_FILE
+          VALUES_FILES=$VALUES_FILE
+          echo "VALUES_FILES: $VALUES_FILE"
+      #https://stackoverflow.com/questions/63241009/aws-sts-assume-role-in-one-command
+      # this assume role command ONLY WORKS if you do it at the begining of the step. If you do not include this in your step, the action's step is
+      # not authenticated and will result in permission errors.
+      - name: Authenticate and run Helm
+        if: ${{ env.CODEFREEZE == 'false' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+          $(aws sts assume-role \
+          --role-arn $ASSUME_ROLE \
+          --role-session-name GitHubPipeline \
+          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+          --output text))
+          aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
+          helm repo add htaic $HELM_SOURCE && helm repo update
+          #helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.VALUES_FILES }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set image.tag=${{ env.new_tag }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          #helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set image.tag=${{ env.new_tag }} --set env[0].value="${{ env.env_tag }}" $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm ls -n hanwha
+          sleep 30
+
+          if [ -n "${{ inputs.subservice }}" ]; then
+            subservices=(${{ inputs.subservice }})
+            for subservice in "${subservices[@]}"
+            do
+              kubectl logs -n hanwha "service/$SERVICE_NAME-$subservice"
+            done
+          else
+            kubectl logs -n hanwha "service/$SERVICE_NAME"
+          fi          
+        env:
+          ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.APPSECRET }}
+          AWS_REGION: ${{ secrets.REGION }}
+          K8S_NAME: ${{ inputs.cluster_name }}
+          SERVICE_NAME: ${{ inputs.service_name }}
+          HELM_SOURCE: ${{ inputs.helm_source }}
+          HELM_CHART: ${{ inputs.helm_chart }}
+          HELM_CHART_VERSION: ${{ inputs.helm_chart_version }}
+
+      - name: Test Deployment
+        uses: aurelien-baudet/workflow-dispatch@v2
+        if: ${{ inputs.test_repo != '' }}
+        with:
+          workflow: ${{ inputs.workflow_file }}
+          repo: ${{ inputs.test_repo }}
+          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+          wait-for-completion: true
+          inputs: '{ "environment": "${{ inputs.environment }}", "playwright": true, "playwright_command": "${{ inputs.playwright_command }}", "playwright_filters": "${{ inputs.playwright_filter }}" }'
+          # ref: ${{ github.event.pull_request.head.ref }}
+
+          
+      
+      - name: Create build info file
+        run: |
+          echo "{
+          \"ServiceName\": \"${{ inputs.service_name }}\",
+          \"BuildNumber\": \"${{github.run_number}}\", 
+          \"CommitSHA\": \"${{ github.sha }}\" 
+          }" >> ${{ inputs.environment }}-${{ inputs.service_name }}.json
+      #add any addtioanl info you want included into build_info.json above 
+  
+      - name: Upload build info as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-info
+          path: "${{ inputs.environment }}-${{ inputs.service_name }}.json"    
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+            name: build-info
+            path: temp
+
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+            args: --follow-symlinks
+        env:
+            SOURCE_DIR: "temp"
+            AWS_S3_BUCKET: hanwha-build-info
+            AWS_ACCESS_KEY_ID: ${{ secrets.S3ACCOUNT }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}   
+            AWS_REGION: us-west-2
+          
