@@ -16,6 +16,7 @@ on:
       trigger_release:
         required: false
         description: "Toggle to true for semantic release"
+        default: false
         type: boolean
     secrets:
       GH_READPAT:
@@ -35,7 +36,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        node-version: ['lts/*']
+        node-version: ["lts/*"]
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
@@ -50,7 +51,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: https://npm.pkg.github.com/
-          scope: '@htaic'
+          scope: "@htaic"
 
       - name: Install dependencies
         working-directory: ${{ inputs.working_dir }}
@@ -65,7 +66,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Release
-        if: inputs.trigger_release && ${{ env.CODEFREEZE == 'false' }}
+        if: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
         working-directory: ${{ inputs.working_dir }}
         run: npx semantic-release
         env:
