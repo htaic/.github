@@ -1,0 +1,97 @@
+name: source code quality check
+
+run-name: R${{ github.run_number }} with repo ${{ inputs.REPO_NAME }} branch ${{ inputs.BRANCH }} 🚀
+
+on:
+  workflow_call:
+    inputs:
+      REPO_NAME:
+        description: 'Name of repository'
+        required: true
+        type: string
+      BUILD_PATH:
+        description: 'Target Path under repository'
+        required: true
+        type: string
+        default: '.'
+      BRANCH:
+        description: 'Target Branch'
+        required: false
+        type: string
+        default: 'release'
+
+env:
+  # Tokens should be changed to actual usage value
+  GH_MANAGEPACKAGE_USER: ${{ secrets.GH_MANAGEPACKAGE_USER }}
+  GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+  GH_MANAGEREPOSITORY_TOKEN: ${{ secrets.GH_MANAGEREPOSITORY_TOKEN}}
+
+  # Need to add new secrets
+  CIM_SERVER: ${{ secrets.CIM_SERVER }}
+  CIM_USER: ${{ secrets.CIM_USER }}
+  CIM_PASSWD: ${{ secrets.CIM_PASSWD }}
+
+jobs:
+  coverity:
+    name: Quality Check    
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      deployments: write
+    
+    env:
+      ANALYSIS_PATH: ./${{ inputs.REPO_NAME }}/${{ inputs.BUILD_PATH }}
+    
+    container:
+        image: ghcr.io/htaic/coverity-github:1.0.1
+        options: --user root
+        credentials:
+          username: ${{ env.GH_MANAGEPACKAGE_USER }}
+          password: ${{ env.GH_MANAGEPACKAGETOKEN }}
+
+    steps:
+      - name: Greeting
+        run: |
+          echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+          echo "github.job: ${{ github.job }}"
+          echo "REPO_NAME: $REPO_NAME"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE" #/__w/helloworld/helloworld
+        env:
+          REPO_NAME: ${{ inputs.REPO_NAME }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: htaic/${{ inputs.REPO_NAME }}
+          ref: refs/heads/${{ inputs.BRANCH }}
+          path: ./${{ inputs.REPO_NAME }}
+          token: ${{ env.GH_MANAGEREPOSITORY_TOKEN }}
+          fetch-depth: 0
+
+      - name: coverity
+        working-directory: ${{ env.ANALYSIS_PATH }}
+        run: |
+          echo "StaticAnalysis"
+
+          CSA_DIR=/home/jenkins/cov-analysis
+          COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
+          COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
+          COVERITY_INTERMEDIATE=${GITHUB_WORKSPACE}/coverity_emit_data
+
+          mkdir $COVERITY_CONFIG
+          mkdir $COVERITY_INTERMEDIATE
+          
+          APP_REVISION=`git rev-parse --short HEAD`;
+          ${CSA_DIR}/bin/ccov-capture --dir ${COVERITY_INTERMEDIATE} --source-dir ${GITHUB_WORKSPACE}/${{ env.ANALYSIS_PATH }}
+          ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license --strip-path `pwd` --webapp-security
+          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ env.CIM_USER }}:${{ env.CIM_PASSWD }}@${{ env.CIM_SERVER }} --ssl --stream ${{ inputs.REPO_NAME }} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
+          max_try_count=5;
+          while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
+              echo "Remaining  try-count : ${max_try_count}";
+              max_try_count=$((max_try_count-1)); 
+              sleep 120;
+              if [ $max_try_count -eq "0" ] ; then
+                  echo "fail cov-commit";
+                  exit 1;
+              fi
+          done
