@@ -157,6 +157,7 @@ jobs:
           HELM_CHART=${{ inputs.helm_chart }}
           EFS_ID=${{ steps.efsid.outputs.efsid }}
           ENFORCE_AUTH=${{ inputs.ENFORCE_AUTH }}
+          echo "env_tag=${{ inputs.environment }}" >> $GITHUB_ENV
           helm repo add htaic $HELM_SOURCE && helm repo update
           if [ -z "$VALUES_FILE" ]; then 
             mkdir .helm
@@ -193,7 +194,7 @@ jobs:
           --output text))
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} $SERVICE_NAME $HELM_CHART --set image.env[0].value=${{ env.env_tag }} $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           sleep 30
 
