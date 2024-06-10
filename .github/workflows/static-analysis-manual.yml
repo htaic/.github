@@ -24,7 +24,7 @@ on:
 jobs:
   static-analysis:
     name: Analysis code quality
-    uses: htaic/.github/.github/workflows/static-analysis.yml@AN-1325
+    uses: htaic/.github/.github/workflows/static-analysis.yml@main
     with:
       REPO_NAME: ${{ inputs.REPO_NAME }}
       BUILD_PATH: ${{ inputs.BUILD_PATH }}
