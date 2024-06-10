@@ -46,8 +46,8 @@ jobs:
         image: ghcr.io/htaic/coverity-github:1.0.1
         options: --user root
         credentials:
-          username: ${{ env.GH_MANAGEPACKAGE_USER }}
-          password: ${{ env.GH_MANAGEPACKAGETOKEN }}
+          username: ${{ secrets.GH_MANAGEPACKAGE_USER }}
+          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
     steps:
       - name: Greeting
@@ -65,7 +65,7 @@ jobs:
           repository: htaic/${{ inputs.REPO_NAME }}
           ref: refs/heads/${{ inputs.BRANCH }}
           path: ./${{ inputs.REPO_NAME }}
-          token: ${{ env.GH_MANAGEREPOSITORY_TOKEN }}
+          token: ${{ secrets.GH_MANAGEREPOSITORY_TOKEN }}
           fetch-depth: 0
 
       - name: coverity
