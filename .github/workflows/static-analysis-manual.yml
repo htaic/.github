@@ -24,7 +24,6 @@ on:
 jobs:
   static-analysis:
     name: Analysis code quality
-    runs-on: ubuntu-latest
     uses: htaic/.github/.github/workflows/static-analysis.yml@AN-1325
     with:
       REPO_NAME: ${{ inputs.REPO_NAME }}
