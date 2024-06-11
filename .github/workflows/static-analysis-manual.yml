@@ -29,3 +29,4 @@ jobs:
       REPO_NAME: ${{ inputs.REPO_NAME }}
       BUILD_PATH: ${{ inputs.BUILD_PATH }}
       BRANCH: ${{ inputs.BRANCH }}
+    secrets: inherit
