@@ -49,7 +49,7 @@ jobs:
         options: --user root
         credentials:
           username: ${{ secrets.GH_MANAGEPACKAGE_USER }}
-          password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+          password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
     steps:
       - name: Greeting
