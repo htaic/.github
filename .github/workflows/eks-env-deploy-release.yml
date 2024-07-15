@@ -221,6 +221,7 @@ jobs:
             CHART_PATH="${HELM_CHART#htaic/}"
             VALUES_FILE=values.yaml
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
+            ls -latr .helm
             if [[ ${{ inputs.new_tag != '' }} ]]; then
              echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
              sed -i "s|tag: "latest"|tag: "$new_tag"|g" $VALUES_FILE
