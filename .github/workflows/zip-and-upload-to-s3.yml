@@ -4,13 +4,16 @@ name: Zip and upload python script to s3
 on:
   workflow_call:
     inputs:
-      aws_access_key_id:
+#      aws_access_key_id:
+#        required: true
+#        type: string
+#      aws_secret_access_key:
+#        required: true
+#        type: string
+      s3_bucket_name:
         required: true
         type: string
-      aws_secret_access_key:
-        required: true
-        type: string
-      bucket_name:
+      s3_key_prefix:
         required: true
         type: string
       package_name:
@@ -50,10 +53,10 @@ jobs:
         with:
             args: --acl public-read --follow-symlinks
             source_dir: "temp"
-            s3_bucket: ${{ inputs.bucket_name }}
+            s3_bucket: ${{ inputs.s3_bucket_name }}
             s3_key_prefix: ${{ inputs.s3_key_prefix }}
-            aws_access_key_id: ${{ inputs.aws_access_key_id }}
-            aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
+            aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 
 
