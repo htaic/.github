@@ -35,7 +35,7 @@ on:
         required: true
 
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.environment }}
