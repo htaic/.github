@@ -2,24 +2,34 @@
 name: Zip and upload python script to s3
 
 on:
-    workflow_call:
-      inputs:
-        aws_access_key_id:
-          required: true
-          type: string
-        aws_secret_access_key:
-          required: true
-          type: string
-        bucket_name:
-          required: true
-          type: string
-        artifact_name:
-          required: true
-          type: string
-        file_path:
-          required: false
-          default: "build_info.txt"
-          type: string
+  workflow_call:
+    inputs:
+      aws_access_key_id:
+        required: true
+        type: string
+      aws_secret_access_key:
+        required: true
+        type: string
+      bucket_name:
+        required: true
+        type: string
+      package_name:
+        required: true
+        type: string
+      package_path:
+        required: false
+        type: string
+      environment:
+        required: true
+        type: string
+        default: dev
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_REGION:
+        required: true
 
 jobs:
   package:
