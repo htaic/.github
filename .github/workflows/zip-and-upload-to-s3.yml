@@ -35,7 +35,7 @@ on:
         required: true
 
 jobs:
-  package:
+  release:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.environment }}
@@ -57,15 +57,3 @@ jobs:
             s3_key_prefix: ${{ inputs.s3_key_prefix }}
             aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-
-
-#    upload_to_s3:
-#      runs-on: ubuntu-latest
-#      steps:
-#      - name: Download artifact
-#        uses: actions/download-artifact@v3
-#        with:
-#            name: ${{ inputs.artifact_name }}
-#            path: temp
-
