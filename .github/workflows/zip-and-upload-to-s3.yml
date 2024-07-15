@@ -20,15 +20,20 @@ on:
           required: false
           default: "build_info.txt"
           type: string
+
 jobs:
-    upload_to_s3:
-      runs-on: ubuntu-latest
-      steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v3
+  package:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Get code
+        uses: actions/checkout@v3
         with:
-            name: ${{ inputs.artifact_name }}
-            path: temp
+          fetch-depth: 0
+      
+      - name:  Create archive
+        run: tar -czvf ${{ inputs.package_name }} ${{ inputs.package_path }}
 
       - name: Upload to S3
         uses: jakejarvis/s3-sync-action@master
@@ -36,7 +41,18 @@ jobs:
             args: --acl public-read --follow-symlinks
             source_dir: "temp"
             s3_bucket: ${{ inputs.bucket_name }}
-            s3_key_prefix: "build-info/"
+            s3_key_prefix: ${{ inputs.s3_key_prefix }}
             aws_access_key_id: ${{ inputs.aws_access_key_id }}
             aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
+
+
+
+#    upload_to_s3:
+#      runs-on: ubuntu-latest
+#      steps:
+#      - name: Download artifact
+#        uses: actions/download-artifact@v3
+#        with:
+#            name: ${{ inputs.artifact_name }}
+#            path: temp
 
