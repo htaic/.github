@@ -223,7 +223,7 @@ jobs:
             mv .helm/$CHART_PATH/$VALUES_FILE ./$VALUES_FILE
             if [[ ${{ inputs.new_tag != '' }} ]]; then
              echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
-             sed -i "s|tag: "latest"|tag: "$new_tag"|g" $VALUES_FILE
+             sed -i "s|tag: "latest"|tag: "${{ env.new_tag }}"|g" $VALUES_FILE
             else
               echo "helm_values=$VALUES_FILE" >> $GITHUB_OUTPUT
               sed -i "s|tag: "latest"|tag: "$TAG"|g" $VALUES_FILE
@@ -257,8 +257,8 @@ jobs:
           aws eks update-kubeconfig --region $AWS_REGION --name $K8S_NAME
           helm repo add htaic $HELM_SOURCE && helm repo update
           #helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.VALUES_FILES }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
-          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set image.tag=${{ env.new_tag }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
-          #helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set image.tag=${{ env.new_tag }} --set env[0].value="${{ env.env_tag }}" $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          #helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set image.tag=${{ env.new_tag }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
+          helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.VALUES_FILES }} --set-json env="[{'name':'HASURA_GRAPHQL_ENABLE_CONSOLE','value’:’false’},{‘name':'HASURA_GRAPHQL_DEV_MODE','value’:’false’}]” --set env[0].value="${{ env.env_tag }}" $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           sleep 30
 
