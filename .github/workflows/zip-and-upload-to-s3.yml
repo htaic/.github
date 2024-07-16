@@ -26,13 +26,6 @@ on:
         required: true
         type: string
         default: dev
-#    secrets:
-#      AWS_ACCESS_KEY_ID:
-#        required: true
-#      AWS_SECRET_ACCESS_KEY:
-#        required: true
-#      AWS_REGION:
-#        required: true
 
 jobs:
   package:
