@@ -1,0 +1,62 @@
+name: Copy and Rename ECR Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ecr_repo:
+        description: 'Source ECR repository URI'
+        required: true
+        default: 'source-account-id.dkr.ecr.region.amazonaws.com/source-repo'
+      source_tag:
+        description: 'Source image tag'
+        required: true
+        default: 'latest'
+      target_ecr_repo:
+        description: 'Target ECR repository URI'
+        required: true
+        default: 'target-account-id.dkr.ecr.region.amazonaws.com/target-repo'
+      target_tag:
+        description: 'Target image tag'
+        required: true
+        default: 'latest'
+      ec2_host:
+        description: 'EC2 instance public DNS or IP'
+        required: true
+      ec2_user:
+        description: 'EC2 SSH username'
+        required: true
+        default: 'ec2-user'
+      ec2_ssh_key:
+        description: 'EC2 SSH private key'
+        required: true
+        default: '${{ secrets.EC2_SSH_KEY }}'
+
+jobs:
+  copy-and-rename:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: SSH into EC2 and copy image
+      uses: appleboy/ssh-action@v0.1.1
+      with:
+        host: ${{ inputs.ec2_host }}
+        username: ${{ inputs.ec2_user }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Login to source ECR
+          aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${{ inputs.source_ecr_repo }}
+          
+          # Pull image from source ECR
+          docker pull ${{ inputs.source_ecr_repo }}:${{ inputs.source_tag }}
+          
+          # Tag image for target ECR
+          docker tag ${{ inputs.source_ecr_repo }}:${{ inputs.source_tag }} ${{ inputs.target_ecr_repo }}:${{ inputs.target_tag }}
+          
+          # Login to target ECR
+          aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${{ inputs.target_ecr_repo }}
+          
+          # Push image to target ECR
+          docker push ${{ inputs.target_ecr_repo }}:${{ inputs.target_tag }}
