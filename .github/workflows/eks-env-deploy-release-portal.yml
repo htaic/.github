@@ -285,7 +285,7 @@ jobs:
           HELM_CHART_VERSION: ${{ inputs.helm_chart_version }}
 
       - name: Test Deployment
-        uses: benc-ukworkflow-dispatch@v1.2.3
+        uses: benc-uk/workflow-dispatch@v1.2.3
         if: ${{ inputs.test_repo != '' }}
         with:
           workflow: ${{ inputs.workflow_file }}
