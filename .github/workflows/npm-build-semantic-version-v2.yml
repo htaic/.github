@@ -44,16 +44,19 @@ jobs:
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # Make sure you use the same token you are using for semantic-versioning or the github action will get
           # confused about which token to connect with and GITHUB_TOKEN won't be valid
           token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
-
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
           registry-url: https://npm.pkg.github.com/
           scope: "@htaic"
 
