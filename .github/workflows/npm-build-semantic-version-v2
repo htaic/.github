@@ -1,0 +1,78 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Build NPM package
+
+on:
+  workflow_call:
+    inputs:
+      install_arg:
+        required: true
+        description: "Command to install deps"
+        type: string
+      build_arg:
+        required: true
+        description: "Command to pass for build"
+        type: string
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      trigger_release:
+        required: false
+        description: "Toggle to true for semantic release"
+        default: false
+        type: boolean
+    secrets:
+      GH_READPAT:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+      CODEFREEZE:
+        required: true
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+
+jobs:
+  build:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node-version: ["lts/*"]
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # Make sure you use the same token you are using for semantic-versioning or the github action will get
+          # confused about which token to connect with and GITHUB_TOKEN won't be valid
+          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: "@htaic"
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: ${{ inputs.install_arg }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run build command
+        working-directory: ${{ inputs.working_dir }}
+        run: ${{ inputs.build_arg }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Release
+        if: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
