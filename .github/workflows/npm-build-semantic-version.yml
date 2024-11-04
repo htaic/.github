@@ -18,6 +18,11 @@ on:
         description: "Toggle to true for semantic release"
         default: false
         type: boolean
+      node_versions:
+        required: false
+        description: "List of node version which want to scan"
+        type: string
+        default: "['lts/*']"
     secrets:
       GH_READPAT:
         required: true
@@ -36,7 +41,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        node-version: ["lts/*"]
+        node-version: ${{ fromJSON(inputs.node_versions) }}
         # node-version: [14.x, 16.x, 18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
