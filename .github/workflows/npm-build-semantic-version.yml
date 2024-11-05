@@ -22,7 +22,7 @@ on:
         required: false
         description: "List of node version which want to scan"
         type: string
-        default: "['lts/*']"
+        default: "['20.x']"
     secrets:
       GH_READPAT:
         required: true
