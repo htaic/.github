@@ -70,17 +70,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for SonarCloud properties
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          if [[ -f ./sonar-project.properties ]]; then
-            echo "sonarcloud properties exists!"
-            exit 0
-          else
-            echo "sonarcloud properties missing!"
-            exit 2
-          fi
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
