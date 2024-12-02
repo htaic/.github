@@ -1,0 +1,209 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: Scan NPM package
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      node_versions:
+        required: false
+        description: "List of node version which want to scan"
+        type: string
+        default: "['20.x']"
+      allow_lint:
+        required: false
+        description: "Enable npm linting"
+        type: boolean
+        default: true
+      lint_arg:
+        required: false
+        description: "use for report generation"
+        type: string
+        default: lint
+      allow_audit:
+        required: false
+        description: "Enable npm auditing"
+        type: boolean
+        default: true
+      audit_args:
+        required: false
+        description: "arguments for NPM audit"
+        type: string
+        default: --groups dependencies --level high || AUDITRESULT=$? || expr $AUDITRESULT '<' 16
+      jest_command:
+        required: false
+        description: "Command to pass yarn for jest tests. Use test --passWithNoTests to bypass"
+        type: string
+        default: "test"
+      playwright:
+        required: false
+        description: "Toggle to true to enable playwright tests"
+        type: boolean
+        default: false
+      playwright_command:
+        required: false
+        description: "command to pass for yarn playwright"
+        type: string
+        default: "playwright test --project chromium"
+      jira_project_key:
+        required: false
+        description: "Required to push results to zephyr scale in jira"
+        type: string
+        default: ""
+      allow_sonar:
+        required: false
+        description: "Enable sonarcloud scanning"
+        type: boolean
+        default: true
+      cache_dependencies:
+        required: false
+        description: "Enable npm cache"
+        type: boolean
+        default: false
+    secrets:
+      GH_READPAT:
+        required: true
+      ZEPHYR_PAT:
+        required: false
+      SONAR_TOKEN:
+        required: false
+
+jobs:
+  process-scan:
+    runs-on: ubuntu-latest
+    #continue-on-error: ${{ matrix.node-version == 'lts/*' }}
+    strategy:
+      matrix:
+        node-version: ["20.x"]
+        # node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    # outputs:
+    #   outcome: ${{ steps.lint.outcome }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com/
+          scope: "@htaic"
+
+      - name: Cache dependencies
+        if: ${{ inputs.cache_dependencies }}
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: ${{ !inputs.cache_dependencies || steps.cache.outputs.cache-hit != 'true' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM linting
+        id: lint
+        if: inputs.allow_lint
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.lint_arg }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: NPM Audit
+        id: audit
+        if: inputs.allow_audit
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn audit ${{ inputs.audit_args }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Jest
+        id: jest-test
+        working-directory: ${{ inputs.working_dir }}
+        run: yarn ${{ inputs.jest_command }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Install Playwright
+        if: inputs.playwright
+        working-directory: ${{ inputs.working_dir }}
+        run: npx playwright install --with-deps
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
+
+      - name: Run Playwright
+        id: playwright
+        if: inputs.playwright
+        working-directory: ${{ inputs.working_dir }}
+        run: npx ${{ inputs.playwright_command }}
+
+      - name: Upload Jest Results - ${{ inputs.jira_project_key }}
+        if: inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./junit.xml"'
+        continue-on-error: true
+
+      - name: Upload Playwright Results - ${{ inputs.jira_project_key }}
+        if: inputs.playwright && inputs.jira_project_key != null
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          curl --location --request POST 'https://api.zephyrscale.smartbear.com/v2/automations/executions/junit?projectKey=${{ inputs.jira_project_key }}&autoCreateTestCases=false' \
+          --header 'Authorization: Bearer ${{ secrets.ZEPHYR_PAT }}' \
+          --form 'file=@"./playwright-results.xml"'
+        continue-on-error: true
+
+      # - name: Check for SonarCloud properties
+      #   if: inputs.allow_sonar
+      #   working-directory: ${{ inputs.working_dir }}
+      #   run: |
+      #     if [[ -f ./sonar-project.properties ]]; then
+      #       echo "sonarcloud properties exists!"
+      #       exit 0
+      #     else
+      #       echo "sonarcloud properties missing!"
+      #       exit 2 # no such file or directory: https://www.cyberciti.biz/faq/linux-bash-exit-status-set-exit-statusin-bash/
+      #     fi
+
+      # # mono repo configurations see https://community.sonarsource.com/t/monorepo-setup-with-github-actions-dont-work/54494/2
+      # - name: SonarCloud Scan
+      #   id: sonarcloud
+      #   if: inputs.allow_sonar
+      #   uses: SonarSource/sonarcloud-github-action@master
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # comes from inherited secrets
+      #   with:
+      #     projectBaseDir: ${{ inputs.working_dir }}
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6.3.3
+        if: github.event_name == 'pull_request' && always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Lint outcome 🧦\`${{ steps.lint.outcome }}\`\n
+            #### NPM Audit 🖌️\`${{ steps.audit.outcome }}\`\n
+            #### Jest Tests 🃏\`${{ steps.jest-test.outcome }}\`\n
+            #### Playwrite Tests ▶️\`${{ steps.playwright.outcome }}\`\n
+            #### SonarCloud Process ☁️\`${{ steps.sonarcloud.outcome }}\`\n
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
