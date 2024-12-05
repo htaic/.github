@@ -197,8 +197,10 @@ jobs:
           helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set global.environment=${{ inputs.environment }} --set image.env[0].value=${{ inputs.environment }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           sleep 30
-
-          if [ -n "${{ inputs.subservice }}" ]; then
+          
+          if [ "${{ inputs.service_name }}" == anaheim-job-scheduler ]; then
+            kubectl logs -n hanwha "deploy/${{ inputs.service_name }}"
+          elif [ -n "${{ inputs.subservice }}" ]; then
             subservices=(${{ inputs.subservice }})
             for subservice in "${subservices[@]}"
             do
