@@ -65,6 +65,9 @@ on:
       GH_MANAGEPACKAGETOKEN:
         required: false
         description: "If not provided, the repo creds will be used. This token is needed for cross repo packages. Docker builds with FROM images that are private should use the appropriate token."
+      CLOUD_DEV_TEAM_TOKEN:
+        required: false
+
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
@@ -95,6 +98,12 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: "@htaic"
 
+
+      - name: Add Token for private packages
+        if: ${{ inputs.image_name == 'anaheim-flexai-devices-service' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: sed -i "s/CLOUD_DEV_TEAM_TOKEN/${{ secrets.CLOUD_DEV_TEAM_TOKEN }}/g" .npmrc
+
       - name: Install dependencies
         working-directory: ${{ inputs.working_dir }}
         run: ${{ inputs.node_type }}
@@ -108,12 +117,17 @@ jobs:
           NODE_OPTIONS: ${{ inputs.node_options }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
+      - name: Create NPMRC for docker for @htaic
+        if: inputs.npmtoken_for_docker && inputs.image_name == 'anaheim-flexai-devices-service'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          sed -i '/@htaic:registry=https:\/\/npm.pkg.github.com/a npm.pkg.github.com\/:_authToken=${{ secrets.GH_READPAT }}' .npmrc
       # Despite this being a bad idea if someone forgets to clean up the npmrc file in the docker build
       # it is the recommended practice from NPM (although they suggest an env var which could expose the
       # token too)
       # https://docs.npmjs.com/docker-and-private-modules#create-and-check-in-a-project-specific-npmrc-file
       - name: Create NPMRC for docker
-        if: inputs.npmtoken_for_docker
+        if: inputs.npmtoken_for_docker && inputs.image_name != 'anaheim-flexai-devices-service'
         working-directory: ${{ inputs.working_dir }}
         run: |
           printf "\n//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
