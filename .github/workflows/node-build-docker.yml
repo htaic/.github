@@ -125,8 +125,8 @@ jobs:
         run: |
           sed -i '/@htaic:registry=https:\/\/npm.pkg.github.com/a npm.pkg.github.com\/:_authToken=${{ secrets.GH_READPAT }}' .npmrc
 
-      - name: Create NPMRC for docker && inputs.image_name != 'anaheim-flexai-devices-service'
-        if: inputs.npmtoken_for_docker
+      - name: Create NPMRC for docker 
+        if: inputs.npmtoken_for_docker && inputs.image_name != 'anaheim-flexai-devices-service'
         working-directory: ${{ inputs.working_dir }}
         run: |
           printf "\n//npm.pkg.github.com/:_authToken=${{ secrets.GH_READPAT }}" >> .npmrc
