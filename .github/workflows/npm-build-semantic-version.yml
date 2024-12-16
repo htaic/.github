@@ -23,6 +23,10 @@ on:
         description: "List of node version which want to scan"
         type: string
         default: "['20.x']"
+      branch:
+        required: false
+        type: string
+        default: main
     secrets:
       GH_READPAT:
         required: true
@@ -71,9 +75,17 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_READPAT }}
 
       - name: Release
-        if: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' }}
+        if: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' && inputs.branch == 'main' }}
         working-directory: ${{ inputs.working_dir }}
         run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Release
+        if: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' && inputs.branch != 'main' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: npx semantic-release --branch ${{ inputs.branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
