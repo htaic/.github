@@ -88,7 +88,7 @@ jobs:
         run: |
           branch_name=$(echo "${{ inputs.branch }}" | cut -d'/' -f3)
           echo "Branch name is: $branch_name"
-          npx semantic-release --branches ${{ inputs.branch }}
+          npx semantic-release --branches "${branch_name}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
