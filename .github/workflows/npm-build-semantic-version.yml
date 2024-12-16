@@ -85,7 +85,10 @@ jobs:
       - name: Release
         if: ${{ inputs.trigger_release && env.CODEFREEZE == 'false' && inputs.branch != 'main' }}
         working-directory: ${{ inputs.working_dir }}
-        run: npx semantic-release --branches ${{ inputs.branch }}
+        run: |
+          branch_name=$(echo "${{ inputs.branch }}" | cut -d'/' -f3)
+          echo "Branch name is: $branch_name"
+          npx semantic-release --branches ${{ inputs.branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
