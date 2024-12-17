@@ -90,4 +90,5 @@ jobs:
           echo "Branch name is: $branch_name"
           npx semantic-release --branches "${branch_name}"
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
