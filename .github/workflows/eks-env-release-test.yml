@@ -85,22 +85,22 @@ on:
         default: true
       new_subservice_tag_1:
         required: false
-        type: string  
+        type: string
       new_subservice_tag_2:
         required: false
-        type: string    
+        type: string
       new_subservice_tag_3:
         required: false
-        type: string 
+        type: string
       subservice1:
         required: false
-        type: string 
+        type: string
       subservice2:
         required: false
-        type: string  
+        type: string
       subservice3:
         required: false
-        type: string   
+        type: string
     secrets:
       GH_MANAGEPACKAGETOKEN:
         required: true
@@ -116,14 +116,14 @@ on:
         description: "example: arn:aws:iam::{{accountID}}:role/AWSControlTowerExecution"
       CODEFREEZE:
         required: true
-    
+
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    environment: 
+    environment:
       name: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v3
@@ -133,7 +133,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.APPID }}
           aws-secret-access-key: ${{ secrets.APPSECRET }}
-          aws-region: ${{ secrets.REGION }} 
+          aws-region: ${{ secrets.REGION }}
           # role-to-assume: ${{ secrets.ASSUME_ROLE }} # still doesn't work...
 
       - name: Fetch EFS ID
@@ -197,7 +197,7 @@ jobs:
           helm upgrade --install ${{ inputs.additional_args }} --namespace hanwha -f ${{ steps.values.outputs.helm_values }} --set global.environment=${{ inputs.environment }} --set image.env[0].value=${{ inputs.environment }} $SERVICE_NAME $HELM_CHART $(if [ -z "$HELM_CHART_VERSION" ]; then echo ""; else echo "--version $HELM_CHART_VERSION"; fi)
           helm ls -n hanwha
           sleep 30
-          
+
           if [ "${{ inputs.service_name }}" == anaheim-job-scheduler ]; then
             kubectl logs -n hanwha "deploy/${{ inputs.service_name }}"
           elif [ -n "${{ inputs.subservice }}" ]; then
@@ -208,7 +208,7 @@ jobs:
             done
           else
             kubectl logs -n hanwha "service/$SERVICE_NAME"
-          fi          
+          fi
         env:
           ASSUME_ROLE: ${{ secrets.ASSUME_ROLE }}
           AWS_ACCESS_KEY_ID: ${{ secrets.APPID }}
@@ -231,7 +231,6 @@ jobs:
           inputs: '{ "environment": "${{ inputs.environment }}", "playwright": true, "playwright_command": "${{ inputs.playwright_command }}", "playwright_filters": "${{ inputs.playwright_filter }}" }'
           # ref: ${{ github.event.pull_request.head.ref }}
 
-          
       - name: Get short Tag Version
         id: write_tag
         run: |
@@ -240,7 +239,7 @@ jobs:
           new_tags="${branch_name}-stable"
           echo "$new_tags"
           echo "new_tag=$new_tags" >> $GITHUB_ENV
-        continue-on-error: true 
+        continue-on-error: true
 
       - name: Tag repo
         if: ${{ inputs.new_tag != '' }}
@@ -255,7 +254,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ secrets.GH_USERNAME }} 
+          username: ${{ secrets.GH_USERNAME }}
           password: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
       - name: Tag docker
@@ -265,7 +264,7 @@ jobs:
           docker tag ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
           docker push ghcr.io/${{ github.repository_owner }}/${{ inputs.dockerimage }}:${{ inputs.new_tag }}
 
-      - name: Tag docker sub service 1 
+      - name: Tag docker sub service 1
         if: ${{ inputs.new_subservice_tag_1 != '' }}
         run: |
           docker pull ghcr.io/${{ github.repository_owner }}/${{ inputs.subservice1 }}:${{ inputs.tag }}
@@ -293,28 +292,26 @@ jobs:
           \"BuildNumber\": \"${{github.run_number}}\", 
           \"CommitSHA\": \"${{ github.sha }}\" 
           }" >> ${{ inputs.environment }}-${{ inputs.service_name }}.json
-      #add any addtioanl info you want included into build_info.json above 
-  
+      #add any addtioanl info you want included into build_info.json above
       - name: Upload build info as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-info
-          path: "${{ inputs.environment }}-${{ inputs.service_name }}.json"    
+          path: "${{ inputs.environment }}-${{ inputs.service_name }}.json"
 
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-            name: build-info
-            path: temp
+          name: build-info
+          path: temp
 
       - name: Upload to S3
         uses: jakejarvis/s3-sync-action@master
         with:
-            args: --follow-symlinks
+          args: --follow-symlinks
         env:
-            SOURCE_DIR: "temp"
-            AWS_S3_BUCKET: hanwha-build-info
-            AWS_ACCESS_KEY_ID: ${{ secrets.S3ACCOUNT }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}   
-            AWS_REGION: us-west-2
-          
+          SOURCE_DIR: "temp"
+          AWS_S3_BUCKET: hanwha-build-info
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3ACCOUNT }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3ACCOUNT_PASSWORD }}
+          AWS_REGION: us-west-2
